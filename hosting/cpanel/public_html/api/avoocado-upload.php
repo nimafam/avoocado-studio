@@ -10,14 +10,20 @@ function respond(int $status, array $payload): void {
     exit;
 }
 
-$configPath = dirname(__DIR__, 2) . '/avoocado-storage-config.php';
+$siteRoot = dirname(__DIR__);
+$configRoot = dirname($siteRoot);
+while (basename($configRoot) !== 'public_html' && dirname($configRoot) !== $configRoot) {
+    $configRoot = dirname($configRoot);
+}
+$accountRoot = basename($configRoot) === 'public_html' ? dirname($configRoot) : dirname($siteRoot);
+$configPath = $accountRoot . '/avoocado-storage-config.php';
 if (!is_file($configPath)) respond(503, ['error' => 'Storage is not configured.']);
 $config = require $configPath;
 $secret = is_array($config) ? ($config['upload_secret'] ?? '') : '';
 $providedSecret = $_SERVER['HTTP_X_AVOOCADO_KEY'] ?? '';
 if (!is_string($secret) || strlen($secret) < 32 || !is_string($providedSecret) || !hash_equals($secret, $providedSecret)) respond(401, ['error' => 'Unauthorized.']);
 
-$uploadRoot = dirname(__DIR__) . '/uploads';
+$uploadRoot = $siteRoot . '/uploads';
 $baseUrl = rtrim((string)($config['public_base_url'] ?? 'https://avoocadostudio.com/uploads'), '/');
 
 if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
