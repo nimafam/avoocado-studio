@@ -60,7 +60,7 @@ export function TShirtImageCustomizer() {
     const selectedArtwork = artworks.find((item) => item.slug === artworkSlug && item.collectionSlug === collection) ?? collectionArtworks[0] ?? null;
     const allowedPlacements = placements.filter(([id]) => selectedArtwork?.placements.includes(id) ?? false);
     const activePlacement = placements.find(([id]) => id === placement) ?? placements[2];
-    const source = `/models/tshirts/colors/${fit}-fit-${colors[color][3]}-${viewSide}.png`;
+    const source = `/models/tshirts/colors/${fit}-fit-${colors[color][3]}-${viewSide}.webp`;
 
     function selectCollection(slug: string) {
         setCollection(slug); const first = artworks.find((item) => item.collectionSlug === slug); setArtworkSlug(first?.slug ?? ""); setPlacement(first?.placements[0] ?? "center");
@@ -92,5 +92,6 @@ export function TShirtImageCustomizer() {
         </aside>
     </div>;
 }
+
 
 
