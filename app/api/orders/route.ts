@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import { isSameOrigin } from "@/lib/admin/auth";
 import { PLACEMENTS } from "@/lib/catalog/cloudflare-repository";
+import { deleteHostedFile, uploadHostedFile } from "@/lib/storage/hosted-files";
 
 export const dynamic = "force-dynamic";
 
@@ -33,17 +34,22 @@ export async function POST(request: Request) {
     if (designSlug && (!design || !design.active)) return Response.json({ error: "این طرح دیگر فعال نیست." }, { status: 409 });
 
     const orderCode = `AV-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 4).toUpperCase()}`;
-    const frontKey = `orders/${orderCode}/front.webp`; const backKey = `orders/${orderCode}/back.webp`;
-    await Promise.all([
-        env.ARTWORKS.put(frontKey, await front.arrayBuffer(), { httpMetadata: { contentType: "image/webp", cacheControl: "private, max-age=0" } }),
-        env.ARTWORKS.put(backKey, await back.arrayBuffer(), { httpMetadata: { contentType: "image/webp", cacheControl: "private, max-age=0" } }),
-    ]);
+    let frontUpload: Awaited<ReturnType<typeof uploadHostedFile>> | null = null;
+    let backUpload: Awaited<ReturnType<typeof uploadHostedFile>> | null = null;
+    try {
+        frontUpload = await uploadHostedFile(front, "orders", `${orderCode}-front`);
+        backUpload = await uploadHostedFile(back, "orders", `${orderCode}-back`);
+    } catch {
+        if (frontUpload) await deleteHostedFile(frontUpload.url).catch(() => undefined);
+        return Response.json({ error: "ذخیره تصاویر سفارش انجام نشد." }, { status: 502 });
+    }
+    if (!frontUpload || !backUpload) return Response.json({ error: "ذخیره تصاویر سفارش انجام نشد." }, { status: 502 });
     const snapshot = { ...payload, firstName, lastName, phone, quantity, orderCode };
     try {
         await env.DB.prepare(`INSERT INTO orders (order_code, customer_first_name, customer_last_name, customer_phone, design_id, design_name, collection_slug, material_id, size_id, fit_id, color_id, print_side, placement_id, quantity, unit_price, front_image_key, back_image_key, configuration_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-            .bind(orderCode, firstName, lastName, phone, design?.id ?? null, design?.name ?? cleanText(payload.designName, 100), cleanText(payload.collectionSlug, 80), cleanText(payload.materialId, 40), cleanText(payload.sizeId, 10), cleanText(payload.fitId, 20), cleanText(payload.colorId, 30), payload.printSide === "back" ? "back" : "front", placement, quantity, Math.max(0, Number(payload.unitPrice) || 0), frontKey, backKey, JSON.stringify(snapshot)).run();
+            .bind(orderCode, firstName, lastName, phone, design?.id ?? null, design?.name ?? cleanText(payload.designName, 100), cleanText(payload.collectionSlug, 80), cleanText(payload.materialId, 40), cleanText(payload.sizeId, 10), cleanText(payload.fitId, 20), cleanText(payload.colorId, 30), payload.printSide === "back" ? "back" : "front", placement, quantity, Math.max(0, Number(payload.unitPrice) || 0), frontUpload.url, backUpload.url, JSON.stringify(snapshot)).run();
     } catch {
-        await Promise.all([env.ARTWORKS.delete(frontKey), env.ARTWORKS.delete(backKey)]);
+        await Promise.allSettled([deleteHostedFile(frontUpload.url), deleteHostedFile(backUpload.url)]);
         return Response.json({ error: "ثبت سفارش انجام نشد." }, { status: 500 });
     }
     return Response.json({ orderCode, telegramStatus: "not_configured" }, { status: 201 });

@@ -1,0 +1,8 @@
+collections/**
+models/**/*.png
+models/**/*.jpg
+models/**/*.jpeg
+models/**/*.eps
+models/**/*.zip
+models/SVG/**
+*.zip

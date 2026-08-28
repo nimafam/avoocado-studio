@@ -10,18 +10,19 @@
     "binding": "ASSETS"
   },
   "cache": { "enabled": true },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "vars": {
+    "UPLOAD_API_URL": "https://avoocadostudio.com/api/avoocado-upload.php"
+  },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "avoocado-catalog",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "246d38b6-1167-43a8-8e01-50a28cc3a33f",
       "migrations_dir": "db/migrations"
-    }
-  ],
-  "r2_buckets": [
-    {
-      "binding": "ARTWORKS",
-      "bucket_name": "avoocado-artworks"
     }
   ]
 }

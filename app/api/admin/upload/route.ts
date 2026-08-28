@@ -1,5 +1,5 @@
-import { env } from "cloudflare:workers";
 import { isAdminRequest, isSameOrigin } from "@/lib/admin/auth";
+import { uploadHostedFile } from "@/lib/storage/hosted-files";
 
 export const dynamic = "force-dynamic";
 const allowedTypes = new Set(["image/png", "image/jpeg", "image/webp"]);
@@ -11,8 +11,10 @@ export async function POST(request: Request) {
     if (!(file instanceof File) || !allowedTypes.has(file.type) || file.size > 8 * 1024 * 1024) {
         return Response.json({ error: "Only PNG, JPEG or WebP files up to 8 MB are allowed." }, { status: 400 });
     }
-    const extension = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
-    const key = `artworks/${crypto.randomUUID()}.${extension}`;
-    await env.ARTWORKS.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type, cacheControl: "public, max-age=31536000, immutable" }, customMetadata: { originalName: file.name } });
-    return Response.json({ key, url: `/api/artwork/${key}` }, { status: 201 });
+    try {
+        const uploaded = await uploadHostedFile(file, "artworks", file.name.replace(/\.[^.]+$/, ""));
+        return Response.json({ key: uploaded.url, url: uploaded.url }, { status: 201 });
+    } catch {
+        return Response.json({ error: "ذخیره تصویر روی هاست انجام نشد." }, { status: 502 });
+    }
 }

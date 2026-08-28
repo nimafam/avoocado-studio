@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import { isAdminRequest, isSameOrigin } from "@/lib/admin/auth";
 import { getAdminCatalog, PLACEMENTS, validSlug } from "@/lib/catalog/cloudflare-repository";
+import { deleteHostedFile } from "@/lib/storage/hosted-files";
 
 export const dynamic = "force-dynamic";
 
@@ -95,7 +96,7 @@ export async function DELETE(request: Request) {
         } else if (entity === "design") {
             const design = await env.DB.prepare("SELECT artwork_key AS artworkKey FROM designs WHERE id = ?").bind(id).first<{ artworkKey: string | null }>();
             await env.DB.prepare("DELETE FROM designs WHERE id = ?").bind(id).run();
-            if (design?.artworkKey) await env.ARTWORKS.delete(design.artworkKey);
+            if (design?.artworkKey?.startsWith("https://")) await deleteHostedFile(design.artworkKey);
         } else return badRequest("Unknown entity.");
         return Response.json(await getAdminCatalog());
     } catch {

@@ -48,7 +48,7 @@ export function TShirtImageCustomizer() {
         fetch("/api/catalog").then((response) => response.ok ? response.json() : Promise.reject()).then((data) => {
             if (cancelled || !Array.isArray(data.categories) || !Array.isArray(data.designs)) return;
             const nextCategories: CustomizerCategory[] = data.categories.map((item: { slug: string; nameEn: string; nameFa: string }) => ({ slug: item.slug, nameEn: item.nameEn, nameFa: item.nameFa }));
-            const nextArtworks: CustomizerArtwork[] = data.designs.map((item: { slug: string; name: string; collectionSlug: string; artworkKey: string | null; placements: string | null }) => ({ slug: item.slug, name: item.name, collectionSlug: item.collectionSlug, artworkUrl: item.artworkKey ? `/api/artwork/${item.artworkKey}` : null, placements: (item.placements?.split(",").filter((value: string) => placements.some(([id]) => id === value)) ?? ["center"]) as Placement[] }));
+            const nextArtworks: CustomizerArtwork[] = data.designs.map((item: { slug: string; name: string; collectionSlug: string; artworkKey: string | null; placements: string | null }) => ({ slug: item.slug, name: item.name, collectionSlug: item.collectionSlug, artworkUrl: item.artworkKey?.startsWith("https://") ? item.artworkKey : null, placements: (item.placements?.split(",").filter((value: string) => placements.some(([id]) => id === value)) ?? ["center"]) as Placement[] }));
             setCategories(nextCategories); setArtworks(nextArtworks);
             const first = nextArtworks[0];
             if (first) { setCollection(first.collectionSlug); setArtworkSlug(first.slug); setPlacement(first.placements[0] ?? "center"); }
