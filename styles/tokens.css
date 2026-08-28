@@ -1,0 +1,63 @@
+:root {
+    /* ─────────────────────────────────
+     AVOOCADO — BRAND
+  ───────────────────────────────── */
+
+    --avo-green: #607922;
+    --avo-green-dark: #435619;
+    --avo-green-light: #e8f5d4;
+
+    --avo-red: #88352f;
+
+    --avo-black: #010201;
+    --avo-white: #ffffff;
+    --avo-cream: #f7f5ee;
+
+    /* ─────────────────────────────────
+     SEMANTIC
+  ───────────────────────────────── */
+
+    --color-primary: var(--avo-green);
+    --color-accent: var(--avo-red);
+
+    --color-background: var(--avo-cream);
+    --color-surface: var(--avo-white);
+
+    --color-text: var(--avo-black);
+    --color-text-muted: #696b63;
+
+    --color-border: rgba(1, 2, 1, 0.12);
+
+    /* ─────────────────────────────────
+     TYPOGRAPHY
+  ───────────────────────────────── */
+
+    --font-primary: "Ubuntu", sans-serif;
+
+    /* ─────────────────────────────────
+     LAYOUT
+  ───────────────────────────────── */
+
+    --container: 1440px;
+    --page-padding: clamp(20px, 4vw, 64px);
+
+    /* ─────────────────────────────────
+     RADIUS
+  ───────────────────────────────── */
+
+    --radius-sm: 8px;
+    --radius-md: 16px;
+    --radius-lg: 28px;
+    --radius-pill: 999px;
+
+    /* ─────────────────────────────────
+     MOTION
+  ───────────────────────────────── */
+
+    --motion-fast: 180ms;
+    --motion-normal: 420ms;
+    --motion-slow: 800ms;
+
+    --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-expressive: cubic-bezier(0.16, 1, 0.3, 1);
+}

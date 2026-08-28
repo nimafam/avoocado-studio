@@ -1,0 +1,28 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "avoocado-storefront",
+  "compatibility_date": "2026-08-27",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "vinext/server/fetch-handler",
+  "assets": {
+    "directory": "dist/client",
+    "not_found_handling": "none",
+    "binding": "ASSETS"
+  },
+  "cache": { "enabled": true },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "avoocado-catalog",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "db/migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "ARTWORKS",
+      "bucket_name": "avoocado-artworks"
+    }
+  ]
+}
+

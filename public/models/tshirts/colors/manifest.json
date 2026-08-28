@@ -1,0 +1,102 @@
+{
+  "white": {
+    "fa": "سفید",
+    "hex": "#FFFFFF",
+    "files": [
+      "models/tshirts/colors/loose-fit-white-front.png",
+      "models/tshirts/colors/loose-fit-white-back.png",
+      "models/tshirts/colors/boxy-fit-white-front.png",
+      "models/tshirts/colors/boxy-fit-white-back.png"
+    ]
+  },
+  "black": {
+    "fa": "مشکی",
+    "hex": "#151515",
+    "files": [
+      "models/tshirts/colors/loose-fit-black-front.png",
+      "models/tshirts/colors/loose-fit-black-back.png",
+      "models/tshirts/colors/boxy-fit-black-front.png",
+      "models/tshirts/colors/boxy-fit-black-back.png"
+    ]
+  },
+  "off-white": {
+    "fa": "سفید استخوانی",
+    "hex": "#F1EBDD",
+    "files": [
+      "models/tshirts/colors/loose-fit-off-white-front.png",
+      "models/tshirts/colors/loose-fit-off-white-back.png",
+      "models/tshirts/colors/boxy-fit-off-white-front.png",
+      "models/tshirts/colors/boxy-fit-off-white-back.png"
+    ]
+  },
+  "zara-green": {
+    "fa": "سبز زارا",
+    "hex": "#4B6B4F",
+    "files": [
+      "models/tshirts/colors/loose-fit-zara-green-front.png",
+      "models/tshirts/colors/loose-fit-zara-green-back.png",
+      "models/tshirts/colors/boxy-fit-zara-green-front.png",
+      "models/tshirts/colors/boxy-fit-zara-green-back.png"
+    ]
+  },
+  "teal-green": {
+    "fa": "سبز کله‌غازی",
+    "hex": "#006A66",
+    "files": [
+      "models/tshirts/colors/loose-fit-teal-green-front.png",
+      "models/tshirts/colors/loose-fit-teal-green-back.png",
+      "models/tshirts/colors/boxy-fit-teal-green-front.png",
+      "models/tshirts/colors/boxy-fit-teal-green-back.png"
+    ]
+  },
+  "sky-blue": {
+    "fa": "آبی آسمانی",
+    "hex": "#86C9E8",
+    "files": [
+      "models/tshirts/colors/loose-fit-sky-blue-front.png",
+      "models/tshirts/colors/loose-fit-sky-blue-back.png",
+      "models/tshirts/colors/boxy-fit-sky-blue-front.png",
+      "models/tshirts/colors/boxy-fit-sky-blue-back.png"
+    ]
+  },
+  "light-gray": {
+    "fa": "طوسی روشن",
+    "hex": "#C8C9CB",
+    "files": [
+      "models/tshirts/colors/loose-fit-light-gray-front.png",
+      "models/tshirts/colors/loose-fit-light-gray-back.png",
+      "models/tshirts/colors/boxy-fit-light-gray-front.png",
+      "models/tshirts/colors/boxy-fit-light-gray-back.png"
+    ]
+  },
+  "olive-green": {
+    "fa": "سبز زیتونی",
+    "hex": "#6D7345",
+    "files": [
+      "models/tshirts/colors/loose-fit-olive-green-front.png",
+      "models/tshirts/colors/loose-fit-olive-green-back.png",
+      "models/tshirts/colors/boxy-fit-olive-green-front.png",
+      "models/tshirts/colors/boxy-fit-olive-green-back.png"
+    ]
+  },
+  "navy": {
+    "fa": "سورمه‌ای",
+    "hex": "#17233F",
+    "files": [
+      "models/tshirts/colors/loose-fit-navy-front.png",
+      "models/tshirts/colors/loose-fit-navy-back.png",
+      "models/tshirts/colors/boxy-fit-navy-front.png",
+      "models/tshirts/colors/boxy-fit-navy-back.png"
+    ]
+  },
+  "cream": {
+    "fa": "کرم",
+    "hex": "#DCC8A2",
+    "files": [
+      "models/tshirts/colors/loose-fit-cream-front.png",
+      "models/tshirts/colors/loose-fit-cream-back.png",
+      "models/tshirts/colors/boxy-fit-cream-front.png",
+      "models/tshirts/colors/boxy-fit-cream-back.png"
+    ]
+  }
+}
