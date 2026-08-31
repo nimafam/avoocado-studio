@@ -14,7 +14,8 @@ export async function POST(request: Request) {
     try {
         const uploaded = await uploadHostedFile(file, "artworks", file.name.replace(/\.[^.]+$/, ""));
         return Response.json({ key: uploaded.url, url: uploaded.url }, { status: 201 });
-    } catch {
+    } catch (error) {
+        console.error(JSON.stringify({ event: "artwork_upload_failed", message: error instanceof Error ? error.message : "Unknown storage error" }));
         return Response.json({ error: "ذخیره تصویر روی هاست انجام نشد." }, { status: 502 });
     }
 }

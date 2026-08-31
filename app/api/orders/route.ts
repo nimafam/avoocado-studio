@@ -39,7 +39,8 @@ export async function POST(request: Request) {
     try {
         frontUpload = await uploadHostedFile(front, "orders", `${orderCode}-front`);
         backUpload = await uploadHostedFile(back, "orders", `${orderCode}-back`);
-    } catch {
+    } catch (error) {
+        console.error(JSON.stringify({ event: "order_image_upload_failed", message: error instanceof Error ? error.message : "Unknown storage error" }));
         if (frontUpload) await deleteHostedFile(frontUpload.url).catch(() => undefined);
         return Response.json({ error: "ذخیره تصاویر سفارش انجام نشد." }, { status: 502 });
     }
