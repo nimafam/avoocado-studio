@@ -2,5 +2,5 @@
 return [
     // Generate a random value of at least 32 characters. Never commit the real value to Git.
     'upload_secret' => 'REPLACE_WITH_A_LONG_RANDOM_SECRET',
-    'public_base_url' => 'https://avoocadostudio.com/uploads',
+    'public_base_url' => 'https://storage.avoocadostudio.com/uploads',
 ];

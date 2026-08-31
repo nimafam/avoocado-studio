@@ -24,7 +24,7 @@ $providedSecret = $_SERVER['HTTP_X_AVOOCADO_KEY'] ?? '';
 if (!is_string($secret) || strlen($secret) < 32 || !is_string($providedSecret) || !hash_equals($secret, $providedSecret)) respond(401, ['error' => 'Unauthorized.']);
 
 $uploadRoot = $siteRoot . '/uploads';
-$baseUrl = rtrim((string)($config['public_base_url'] ?? 'https://avoocadostudio.com/uploads'), '/');
+$baseUrl = rtrim((string)($config['public_base_url'] ?? 'https://storage.avoocadostudio.com/uploads'), '/');
 
 if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     $body = json_decode(file_get_contents('php://input') ?: '{}', true);
