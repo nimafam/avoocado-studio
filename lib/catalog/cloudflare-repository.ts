@@ -24,6 +24,90 @@ export type PublicDesign = {
     placements: string | null;
 };
 
+export type PublicProduct = PublicDesign & {
+    collectionName: string;
+    collectionNameFa: string;
+    price: number;
+    variantCount: number;
+};
+
+export type PublicVariant = {
+    sku: string;
+    price: number;
+    stockQuantity: number;
+    materialId: string;
+    materialNameFa: string;
+    materialNameEn: string;
+    sizeId: string;
+    sizeLabel: string;
+    fitId: string;
+    fitNameFa: string;
+    fitNameEn: string;
+    colorId: string;
+    colorNameFa: string;
+    colorNameEn: string;
+    colorHex: string;
+};
+
+export async function getPublicProducts() {
+    const result = await env.DB.prepare(`
+        SELECT d.id, d.slug, d.name, d.description, d.base_price AS basePrice,
+               d.artwork_key AS artworkKey, c.slug AS collectionSlug,
+               c.name_en AS collectionName, c.name_fa AS collectionNameFa,
+               GROUP_CONCAT(DISTINCT dp.placement_id) AS placements,
+               COALESCE(MIN(CASE WHEN v.active = 1 THEN v.price END), d.base_price) AS price,
+               COUNT(DISTINCT CASE WHEN v.active = 1 THEN v.id END) AS variantCount
+        FROM designs d
+        JOIN design_category_assignments a ON a.design_id = d.id
+        JOIN design_categories c ON c.id = a.category_id AND c.active = 1
+        LEFT JOIN design_placements dp ON dp.design_id = d.id
+        LEFT JOIN product_variants v ON v.design_id = d.id
+        WHERE d.active = 1
+        GROUP BY d.id, c.id
+        ORDER BY d.created_at DESC, d.id DESC
+    `).all<PublicProduct>();
+
+    return result.results ?? [];
+}
+
+export async function getPublicProduct(slug: string) {
+    const product = await env.DB.prepare(`
+        SELECT d.id, d.slug, d.name, d.description, d.base_price AS basePrice,
+               d.artwork_key AS artworkKey, c.slug AS collectionSlug,
+               c.name_en AS collectionName, c.name_fa AS collectionNameFa,
+               GROUP_CONCAT(DISTINCT dp.placement_id) AS placements,
+               COALESCE(MIN(CASE WHEN v.active = 1 THEN v.price END), d.base_price) AS price,
+               COUNT(DISTINCT CASE WHEN v.active = 1 THEN v.id END) AS variantCount
+        FROM designs d
+        JOIN design_category_assignments a ON a.design_id = d.id
+        JOIN design_categories c ON c.id = a.category_id AND c.active = 1
+        LEFT JOIN design_placements dp ON dp.design_id = d.id
+        LEFT JOIN product_variants v ON v.design_id = d.id
+        WHERE d.slug = ? AND d.active = 1
+        GROUP BY d.id, c.id
+        LIMIT 1
+    `).bind(slug).first<PublicProduct>();
+
+    if (!product) return null;
+
+    const variants = await env.DB.prepare(`
+        SELECT v.sku, v.price, v.stock_quantity AS stockQuantity,
+               m.id AS materialId, m.name_fa AS materialNameFa, m.name_en AS materialNameEn,
+               s.id AS sizeId, s.label AS sizeLabel,
+               f.id AS fitId, f.name_fa AS fitNameFa, f.name_en AS fitNameEn,
+               c.id AS colorId, c.name_fa AS colorNameFa, c.name_en AS colorNameEn, c.hex AS colorHex
+        FROM product_variants v
+        JOIN shirt_materials m ON m.id = v.material_id AND m.active = 1
+        JOIN shirt_sizes s ON s.id = v.size_id AND s.active = 1
+        JOIN shirt_fits f ON f.id = v.fit_id AND f.active = 1
+        JOIN shirt_colors c ON c.id = v.color_id AND c.active = 1
+        WHERE v.design_id = ? AND v.active = 1
+        ORDER BY f.sort_order, c.sort_order, s.sort_order, m.sort_order
+    `).bind(product.id).all<PublicVariant>();
+
+    return { product, variants: variants.results ?? [] };
+}
+
 export async function getPublicCollections() {
     const result = await env.DB.prepare(`
         SELECT c.id, c.slug, c.name_fa AS nameFa, c.name_en AS nameEn,
