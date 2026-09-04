@@ -4,13 +4,209 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-type Order = { id: number; orderCode: string; firstName: string; lastName: string; phone: string; status: string; designName: string; materialId: string; sizeId: string; fitId: string; colorId: string; printSide: string; placementId: string; quantity: number; unitPrice: number; orderType: string; variantSku: string | null; totalPrice: number; frontImageUrl: string; backImageUrl: string; telegramStatus: string; telegramError: string | null; createdAt: string };
+type Order = {
+  id: number;
+  orderCode: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  status: string;
+  designName: string;
+  materialId: string;
+  sizeId: string;
+  fitId: string;
+  colorId: string;
+  printSide: string;
+  placementId: string;
+  quantity: number;
+  unitPrice: number;
+  orderType: string;
+  variantSku: string | null;
+  totalPrice: number;
+  frontImageUrl: string;
+  backImageUrl: string;
+  telegramStatus: string;
+  telegramError: string | null;
+  createdAt: string;
+};
 
 export function OrdersManager() {
-    const [orders, setOrders] = useState<Order[]>([]); const [statuses, setStatuses] = useState<string[]>([]); const [unauthorized, setUnauthorized] = useState(false); const [busy, setBusy] = useState(false);
-    async function load() { const response = await fetch("/api/admin/orders"); if (response.status === 401) { setUnauthorized(true); return; } const data = await response.json(); setOrders(data.orders); setStatuses(data.statuses); }
-    useEffect(() => { void fetch("/api/admin/orders").then(async (response) => { if (response.status === 401) { setUnauthorized(true); return; } const data = await response.json(); setOrders(data.orders); setStatuses(data.statuses); }); }, []);
-    async function changeStatus(id: number, status: string) { setBusy(true); const response = await fetch("/api/admin/orders", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status }) }); if (response.ok) { const data = await response.json(); setOrders(data.orders); } setBusy(false); }
-    if (unauthorized) return <main className="flex min-h-screen items-center justify-center bg-[#efeee9]"><div className="bg-white p-8 text-center"><h1 className="text-2xl font-bold">ابتدا وارد شوید</h1><Link href="/admin" className="mt-5 inline-block bg-black px-6 py-3 text-white">ورود مدیر</Link></div></main>;
-    return <main className="min-h-screen bg-[#efeee9] px-5 py-8 md:px-10"><header className="mx-auto flex max-w-7xl items-center justify-between border-b border-black/15 pb-6"><div><p className="text-xs uppercase tracking-[.18em] text-[var(--color-primary)]">Avoocado</p><h1 className="mt-2 text-3xl font-bold">سفارش‌ها</h1></div><div className="flex gap-3"><button onClick={() => void load()} className="border border-black/20 px-4 py-2 text-sm">به‌روزرسانی</button><Link href="/admin" className="border border-black/20 px-4 py-2 text-sm">کاتالوگ</Link></div></header><div className="mx-auto mt-8 max-w-7xl space-y-4">{orders.length ? orders.map((order) => <article key={order.id} className="grid gap-5 bg-white p-5 lg:grid-cols-[180px_1fr_auto]"><div className="grid grid-cols-2 gap-2">{[order.frontImageUrl, order.backImageUrl].map((url) => <div className="relative aspect-[4/5] bg-[#efeee9]" key={url}><Image src={url} alt="Order preview" fill unoptimized className="object-contain"/></div>)}</div><div><div className="flex flex-wrap items-center gap-3"><h2 className="text-xl font-bold">{order.orderCode}</h2><span className="rounded-full bg-black/5 px-3 py-1 text-xs">{order.status}</span><span className="rounded-full bg-black/5 px-3 py-1 text-xs">{order.orderType === "ready-made" ? "آماده" : "سفارشی"}</span><span className="rounded-full bg-black/5 px-3 py-1 text-xs">Telegram: {order.telegramStatus}</span></div><p className="mt-3 font-medium">{order.firstName} {order.lastName} · <a href={`tel:${order.phone}`} className="underline">{order.phone}</a></p><p className="mt-3 text-sm leading-6 text-black/55">{order.designName} · {order.fitId} · {order.colorId} · {order.sizeId} · {order.materialId}<br/>Print: {order.printSide} / {order.placementId} · Quantity: {order.quantity}{order.variantSku ? ` · SKU: ${order.variantSku}` : ""}<br/>Total: {order.totalPrice.toLocaleString("fa-IR")} تومان</p><p className="mt-3 text-xs text-black/35">{new Date(`${order.createdAt}Z`).toLocaleString("fa-IR")}</p></div><select disabled={busy} value={order.status} onChange={(event) => void changeStatus(order.id, event.target.value)} className="h-fit border border-black/20 p-3 text-sm">{statuses.map((status) => <option key={status}>{status}</option>)}</select></article>) : <p className="bg-white p-8 text-center text-black/45">هنوز سفارشی ثبت نشده است.</p>}</div></main>;
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [statuses, setStatuses] = useState<string[]>([]);
+  const [unauthorized, setUnauthorized] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  async function load() {
+    setError("");
+    try {
+      const response = await fetch("/api/admin/orders", { cache: "no-store" });
+      if (response.status === 401) {
+        setUnauthorized(true);
+        return;
+      }
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "دریافت سفارش‌ها انجام نشد.");
+      setOrders(data.orders ?? []);
+      setStatuses(data.statuses ?? []);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "دریافت سفارش‌ها انجام نشد.");
+    } finally {
+      setLoading(false);
+    }
+  }
+  useEffect(() => {
+    void fetch("/api/admin/orders", { cache: "no-store" })
+      .then(async (response) => {
+        if (response.status === 401) {
+          setUnauthorized(true);
+          return;
+        }
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "دریافت سفارش‌ها انجام نشد.");
+        setOrders(data.orders ?? []);
+        setStatuses(data.statuses ?? []);
+      })
+      .catch((reason) => setError(reason instanceof Error ? reason.message : "دریافت سفارش‌ها انجام نشد."))
+      .finally(() => setLoading(false));
+  }, []);
+  async function changeStatus(id: number, status: string) {
+    setBusy(true);
+    setError("");
+    try {
+      const response = await fetch("/api/admin/orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "تغییر وضعیت انجام نشد.");
+      setOrders(data.orders ?? []);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "تغییر وضعیت انجام نشد.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  if (unauthorized)
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#efeee9]">
+        <div className="bg-white p-8 text-center">
+          <h1 className="text-2xl font-bold">ابتدا وارد شوید</h1>
+          <Link
+            href="/admin"
+            className="mt-5 inline-block bg-black px-6 py-3 text-white"
+          >
+            ورود مدیر
+          </Link>
+        </div>
+      </main>
+    );
+  return (
+    <main className="min-h-screen bg-[#efeee9] px-5 py-8 md:px-10">
+      <header className="mx-auto flex max-w-7xl items-center justify-between border-b border-black/15 pb-6">
+        <div>
+          <p className="text-xs uppercase tracking-[.18em] text-[var(--color-primary)]">
+            Avoocado
+          </p>
+          <h1 className="mt-2 text-3xl font-bold">سفارش‌ها</h1>
+        </div>
+        <div className="flex gap-3">
+          <button
+            disabled={busy || loading}
+            onClick={() => void load()}
+            className="border border-black/20 px-4 py-2 text-sm disabled:opacity-50"
+          >
+            به‌روزرسانی
+          </button>
+          <Link
+            href="/admin"
+            className="border border-black/20 px-4 py-2 text-sm"
+          >
+            کاتالوگ
+          </Link>
+        </div>
+      </header>
+      {error ? (
+        <p className="mx-auto mt-5 max-w-7xl border border-red-300 bg-red-50 p-3 text-sm text-red-800">
+          {error}
+        </p>
+      ) : null}
+      <div className="mx-auto mt-8 max-w-7xl space-y-4">
+        {loading ? (
+          <p className="bg-white p-8 text-center text-black/45">در حال دریافت سفارش‌ها…</p>
+        ) : orders.length ? (
+          orders.map((order) => (
+            <article
+              key={order.id}
+              className="grid gap-5 bg-white p-5 lg:grid-cols-[180px_1fr_auto]"
+            >
+              <div className="grid grid-cols-2 gap-2">
+                {[order.frontImageUrl, order.backImageUrl].map((url) => (
+                  <div className="relative aspect-[4/5] bg-[#efeee9]" key={url}>
+                    <Image
+                      src={url.startsWith("https://storage.avoocadostudio.com/uploads/") ? `/api/storage-image?url=${encodeURIComponent(url)}` : url}
+                      alt="Order preview"
+                      fill
+                      unoptimized
+                      className="object-contain"
+                    />
+                  </div>
+                ))}
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <h2 className="text-xl font-bold">{order.orderCode}</h2>
+                  <span className="rounded-full bg-black/5 px-3 py-1 text-xs">
+                    {order.status}
+                  </span>
+                  <span className="rounded-full bg-black/5 px-3 py-1 text-xs">
+                    {order.orderType === "ready-made" ? "آماده" : "سفارشی"}
+                  </span>
+                  <span className="rounded-full bg-black/5 px-3 py-1 text-xs">
+                    Telegram: {order.telegramStatus}
+                  </span>
+                </div>
+                <p className="mt-3 font-medium">
+                  {order.firstName} {order.lastName} ·{" "}
+                  <a href={`tel:${order.phone}`} className="underline">
+                    {order.phone}
+                  </a>
+                </p>
+                <p className="mt-3 text-sm leading-6 text-black/55">
+                  {order.designName} · {order.fitId} · {order.colorId} ·{" "}
+                  {order.sizeId} · {order.materialId}
+                  <br />
+                  Print: {order.printSide} / {order.placementId} · Quantity:{" "}
+                  {order.quantity}
+                  {order.variantSku ? ` · SKU: ${order.variantSku}` : ""}
+                  <br />
+                  Total: {order.totalPrice.toLocaleString("fa-IR")} تومان
+                </p>
+                <p className="mt-3 text-xs text-black/35">
+                  {new Date(`${order.createdAt}Z`).toLocaleString("fa-IR")}
+                </p>
+              </div>
+              <select
+                disabled={busy}
+                value={order.status}
+                onChange={(event) =>
+                  void changeStatus(order.id, event.target.value)
+                }
+                className="h-fit border border-black/20 p-3 text-sm"
+              >
+                {statuses.map((status) => (
+                  <option key={status}>{status}</option>
+                ))}
+              </select>
+            </article>
+          ))
+        ) : (
+          <p className="bg-white p-8 text-center text-black/45">
+            هنوز سفارشی ثبت نشده است.
+          </p>
+        )}
+      </div>
+    </main>
+  );
 }
