@@ -9,8 +9,9 @@ import {
 
 import { Hero } from "./Hero";
 import { FeaturedCollections } from "./FeaturedCollections";
+import type { PublicCollection } from "@/lib/catalog/cloudflare-repository";
 
-export function HomeExperience() {
+export function HomeExperience({ collections }: { collections: PublicCollection[] }) {
     const containerRef = useRef<HTMLDivElement>(null);
 
     const { scrollYProgress } = useScroll({
@@ -148,7 +149,7 @@ export function HomeExperience() {
             will-change-transform
           "
                 >
-                    <FeaturedCollections />
+                    <FeaturedCollections collections={collections} />
                 </motion.div>
 
             </div>

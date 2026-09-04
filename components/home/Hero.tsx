@@ -1,4 +1,9 @@
+"use client";
+
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+
 export function Hero() {
+    const { locale } = useLanguage(); const fa = locale === "fa";
     return (
         <section className="relative flex h-[100svh] items-center">
 
@@ -17,7 +22,7 @@ export function Hero() {
               text-[var(--color-primary)]
             "
                     >
-                        Avoocado / Original Apparel
+                        {fa ? "آووکادو / پوشاک اورجینال" : "Avoocado / Original Apparel"}
                     </span>
 
                     <h1
@@ -28,15 +33,7 @@ export function Hero() {
               tracking-[-0.065em]
             "
                     >
-                        Wear
-                        <br />
-
-                        something
-                        <br />
-
-                        <span className="text-[var(--color-primary)]">
-                            different.
-                        </span>
+                        {fa ? <>چیزی<br />متفاوت<br /><span className="text-[var(--color-primary)]">بپوش.</span></> : <>Wear<br />something<br /><span className="text-[var(--color-primary)]">different.</span></>}
                     </h1>
 
                 </div>
@@ -51,8 +48,7 @@ export function Hero() {
               text-[var(--color-text-muted)]
             "
                     >
-                        Original designs inspired by games,
-                        art, culture and everything we love.
+                        {fa ? "طرح‌های اورجینال با الهام از بازی، هنر، فرهنگ و هر چیزی که دوست داریم." : "Original designs inspired by games, art, culture and everything we love."}
                     </p>
 
                     <div
@@ -64,7 +60,7 @@ export function Hero() {
               md:flex
             "
                     >
-                        <span>Scroll to explore</span>
+                        <span>{fa ? "برای دیدن بیشتر اسکرول کنید" : "Scroll to explore"}</span>
                         <span className="text-xl">↓</span>
                     </div>
 

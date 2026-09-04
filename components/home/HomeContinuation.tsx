@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
+import type { PublicProduct } from "@/lib/catalog/cloudflare-repository";
 
 const featuredProducts = [
     { name: "Meeple Society", collection: "Boardgame", price: "$38", tone: "bg-[#d7ff46]", mark: "M" },
@@ -9,8 +11,9 @@ const featuredProducts = [
     { name: "Everyday Icon", collection: "Pop Art", price: "$38", tone: "bg-[#ff775f]", mark: "E" },
 ];
 
-export function HomeContinuation() {
+export function HomeContinuation({ products }: { products: PublicProduct[] }) {
     const { locale } = useLanguage(); const fa = locale === "fa";
+    const latestProducts = products.slice(0, 3);
     return (
         <>
             <section className="bg-black py-24 text-white md:py-36">
@@ -20,7 +23,7 @@ export function HomeContinuation() {
                         {fa ? "نگاه ما" : "Our point of view"}
                     </div>
                     <div>
-                        <h2 className="max-w-5xl text-[clamp(3.2rem,7.6vw,8.5rem)] font-bold leading-[0.88] tracking-[-0.06em]">
+                        <h2 className={`max-w-5xl font-bold ${fa ? "text-[clamp(2.7rem,6vw,6.8rem)] leading-[1.05] tracking-[-0.025em]" : "text-[clamp(3.2rem,7.6vw,8.5rem)] leading-[0.88] tracking-[-0.06em]"}`}>
                             {fa ? "لباس باید قبل از تو چیزی برای گفتن داشته باشد." : "Clothes should say something before you do."}
                         </h2>
                         <div className="mt-14 grid gap-8 border-t border-white/20 pt-8 text-white/60 sm:grid-cols-2">
@@ -46,22 +49,18 @@ export function HomeContinuation() {
                     </div>
 
                     <div className="grid gap-12 md:grid-cols-3 md:gap-5">
-                        {featuredProducts.map((product, index) => (
-                            <Link href="/t-shirts" className="group" key={product.name}>
-                                <div className={`relative aspect-[4/5] overflow-hidden ${product.tone}`}>
+                        {(latestProducts.length ? latestProducts : featuredProducts).map((product, index) => (
+                            <Link href={"slug" in product ? `/t-shirts/${product.slug}` : "/t-shirts"} className="group" key={product.name}>
+                                <div className={`relative aspect-[4/5] overflow-hidden ${"tone" in product ? product.tone : "bg-[#efeee9]"}`}>
                                     <span className="absolute left-5 top-5 text-xs font-medium">0{index + 1}</span>
-                                    <div className="absolute inset-[14%] rounded-[48%] border border-black/20 transition-transform duration-700 ease-[var(--ease-standard)] group-hover:rotate-6 group-hover:scale-105" />
-                                    <div className="absolute left-1/2 top-1/2 flex size-[44%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black text-[clamp(4rem,9vw,8rem)] font-bold leading-none text-white transition-transform duration-700 ease-[var(--ease-standard)] group-hover:-rotate-6 group-hover:scale-110">
-                                        {product.mark}
-                                    </div>
-                                    <span className="absolute bottom-5 right-5 text-[10px] font-medium uppercase tracking-[0.16em]">{fa ? "تصویر موقت طرح" : "Artwork placeholder"}</span>
+                                    {"artworkKey" in product && product.artworkKey ? <Image src={product.artworkKey.startsWith("https://storage.avoocadostudio.com/uploads/") ? `/api/storage-image?url=${encodeURIComponent(product.artworkKey)}` : product.artworkKey} alt={product.name} fill unoptimized className="object-contain p-[12%] transition-transform duration-700 group-hover:scale-105" /> : <><div className="absolute inset-[14%] rounded-[48%] border border-black/20 transition-transform duration-700 ease-[var(--ease-standard)] group-hover:rotate-6 group-hover:scale-105" /><div className="absolute left-1/2 top-1/2 flex size-[44%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black text-[clamp(4rem,9vw,8rem)] font-bold leading-none text-white transition-transform duration-700 ease-[var(--ease-standard)] group-hover:-rotate-6 group-hover:scale-110">{"mark" in product ? product.mark : product.name.slice(0, 1)}</div><span className="absolute bottom-5 right-5 text-[10px] font-medium uppercase tracking-[0.16em]">{fa ? "تصویر طرح به‌زودی" : "Artwork coming soon"}</span></>}
                                 </div>
                                 <div className="mt-5 flex items-start justify-between gap-4">
                                     <div>
                                         <h3 className="text-xl font-medium tracking-[-0.025em]">{product.name}</h3>
-                                        <p className="mt-1 text-sm text-black/50">{product.collection}</p>
+                                        <p className="mt-1 text-sm text-black/50">{"collectionNameFa" in product ? (fa ? product.collectionNameFa : product.collectionName) : product.collection}</p>
                                     </div>
-                                    <span className="text-sm font-medium">{product.price}</span>
+                                    <span className="text-sm font-medium">{typeof product.price === "number" ? `${product.price.toLocaleString(fa ? "fa-IR" : "en-US")} ${fa ? "تومان" : "Toman"}` : product.price}</span>
                                 </div>
                             </Link>
                         ))}
