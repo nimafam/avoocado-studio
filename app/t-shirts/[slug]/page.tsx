@@ -5,6 +5,7 @@ import { ReadyMadeProductConfigurator } from "@/components/catalog/ReadyMadeProd
 import { Header } from "@/components/layout/Header";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { getPublicProduct } from "@/lib/catalog/cloudflare-repository";
+import { getServerLocale } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -19,5 +20,6 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     const result = await getPublicProduct(slug);
     if (!result) notFound();
     const { product, variants } = result;
-    return <main><Header /><section className="container pb-24 pt-40 md:pt-44"><Link href={`/collections/${product.collectionSlug}`} className="mb-8 inline-block text-xs font-medium uppercase tracking-[0.18em] text-black/45">{product.collectionName} ↗</Link><ReadyMadeProductConfigurator product={product} variants={variants} /></section><SiteFooter /></main>;
+    const fa = await getServerLocale() === "fa";
+    return <main><Header /><section className="container pb-24 pt-40 md:pt-44"><Link href={`/collections/${product.collectionSlug}`} className="mb-8 inline-block text-xs font-medium uppercase tracking-[0.18em] text-black/45">{fa ? product.collectionNameFa : product.collectionName} ↗</Link><ReadyMadeProductConfigurator product={product} variants={variants} /></section><SiteFooter /></main>;
 }

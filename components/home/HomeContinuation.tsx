@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 
 const featuredProducts = [
     { name: "Meeple Society", collection: "Boardgame", price: "$38", tone: "bg-[#d7ff46]", mark: "M" },
@@ -7,24 +10,25 @@ const featuredProducts = [
 ];
 
 export function HomeContinuation() {
+    const { locale } = useLanguage(); const fa = locale === "fa";
     return (
         <>
             <section className="bg-black py-24 text-white md:py-36">
                 <div className="container grid gap-16 md:grid-cols-[1fr_2fr] md:gap-24">
                     <div className="flex items-start gap-3 text-xs font-medium uppercase tracking-[0.18em] text-white/55">
                         <span className="mt-1.5 size-2 rounded-full bg-[var(--color-primary)]" />
-                        Our point of view
+                        {fa ? "نگاه ما" : "Our point of view"}
                     </div>
                     <div>
                         <h2 className="max-w-5xl text-[clamp(3.2rem,7.6vw,8.5rem)] font-bold leading-[0.88] tracking-[-0.06em]">
-                            Clothes should say something before you do.
+                            {fa ? "لباس باید قبل از تو چیزی برای گفتن داشته باشد." : "Clothes should say something before you do."}
                         </h2>
                         <div className="mt-14 grid gap-8 border-t border-white/20 pt-8 text-white/60 sm:grid-cols-2">
                             <p className="max-w-md text-base leading-7">
-                                Avoocado turns the games, places, art and strange little ideas we love into original pieces made to be worn often.
+                                {fa ? "آووکادو بازی‌ها، مکان‌ها، هنر و ایده‌های کوچک عجیبی را که دوست داریم به لباس‌های اورجینال و پوشیدنی تبدیل می‌کند." : "Avoocado turns the games, places, art and strange little ideas we love into original pieces made to be worn often."}
                             </p>
                             <p className="max-w-md text-base leading-7">
-                                Designed in our studio, released in small runs and printed with attention to every line, color and detail.
+                                {fa ? "طراحی‌شده در استودیوی ما، تولیدشده در تعداد محدود و چاپ‌شده با دقت به هر خط، رنگ و جزئیات." : "Designed in our studio, released in small runs and printed with attention to every line, color and detail."}
                             </p>
                         </div>
                     </div>
@@ -35,10 +39,10 @@ export function HomeContinuation() {
                 <div className="container">
                     <div className="mb-14 flex items-end justify-between border-b border-black/15 pb-7 md:mb-20">
                         <div>
-                            <span className="mb-4 block text-xs font-medium uppercase tracking-[0.2em] text-[var(--color-primary)]">New in studio</span>
-                            <h2 className="text-[clamp(3rem,6vw,6.5rem)] font-bold leading-[0.9] tracking-[-0.055em]">Fresh objects</h2>
+                            <span className="mb-4 block text-xs font-medium uppercase tracking-[0.2em] text-[var(--color-primary)]">{fa ? "تازه‌های استودیو" : "New in studio"}</span>
+                            <h2 className="text-[clamp(3rem,6vw,6.5rem)] font-bold leading-[0.9] tracking-[-0.055em]">{fa ? "محصولات تازه" : "Fresh objects"}</h2>
                         </div>
-                        <Link href="/t-shirts" className="hidden text-sm font-medium sm:block">Shop all ↗</Link>
+                        <Link href="/t-shirts" className="hidden text-sm font-medium sm:block">{fa ? "مشاهده همه" : "Shop all"} ↗</Link>
                     </div>
 
                     <div className="grid gap-12 md:grid-cols-3 md:gap-5">
@@ -50,7 +54,7 @@ export function HomeContinuation() {
                                     <div className="absolute left-1/2 top-1/2 flex size-[44%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black text-[clamp(4rem,9vw,8rem)] font-bold leading-none text-white transition-transform duration-700 ease-[var(--ease-standard)] group-hover:-rotate-6 group-hover:scale-110">
                                         {product.mark}
                                     </div>
-                                    <span className="absolute bottom-5 right-5 text-[10px] font-medium uppercase tracking-[0.16em]">Artwork placeholder</span>
+                                    <span className="absolute bottom-5 right-5 text-[10px] font-medium uppercase tracking-[0.16em]">{fa ? "تصویر موقت طرح" : "Artwork placeholder"}</span>
                                 </div>
                                 <div className="mt-5 flex items-start justify-between gap-4">
                                     <div>
@@ -67,11 +71,15 @@ export function HomeContinuation() {
 
             <section className="border-y border-black/15">
                 <div className="container grid md:grid-cols-3">
-                    {[
+                    {(fa ? [
+                        ["۰۱", "اورجینال از نقطه شروع", "هر طرح از استودیوی آووکادو آغاز می‌شود."],
+                        ["۰۲", "تولید محدود", "تعداد کمتر، دقت بیشتر و محصولی دور از معمول."],
+                        ["۰۳", "ساخته‌شده برای زندگی", "پایه‌ای راحت برای طرح‌هایی با شخصیت."],
+                    ] : [
                         ["01", "Original by default", "Every graphic starts in the Avoocado studio."],
                         ["02", "Small-run mindset", "Fewer pieces, more care and less ordinary stuff."],
                         ["03", "Made to be lived in", "Comfortable foundations for designs with character."],
-                    ].map(([index, title, copy]) => (
+                    ]).map(([index, title, copy]) => (
                         <div className="border-b border-black/15 py-12 md:border-b-0 md:border-r md:px-10 md:py-16 md:first:pl-0 md:last:border-r-0" key={index}>
                             <span className="text-xs text-black/40">{index}</span>
                             <h3 className="mt-10 text-2xl font-medium tracking-[-0.035em]">{title}</h3>
@@ -84,10 +92,10 @@ export function HomeContinuation() {
             <section className="py-6">
                 <Link href="/collections" className="group mx-6 flex min-h-[70svh] items-center overflow-hidden rounded-[2rem] bg-[var(--color-primary)] md:mx-10">
                     <div className="container py-20">
-                        <span className="text-xs font-medium uppercase tracking-[0.2em]">The full collection</span>
+                        <span className="text-xs font-medium uppercase tracking-[0.2em]">{fa ? "تمام کالکشن‌ها" : "The full collection"}</span>
                         <div className="mt-8 flex items-end justify-between gap-8">
                             <h2 className="text-[clamp(4rem,11vw,12rem)] font-bold leading-[0.78] tracking-[-0.07em]">
-                                Find your<br />different.
+                                {fa ? <>تفاوت خودت<br />را پیدا کن.</> : <>Find your<br />different.</>}
                             </h2>
                             <span className="mb-2 hidden size-24 items-center justify-center rounded-full bg-black text-3xl text-white transition-transform duration-500 group-hover:rotate-45 md:flex">↗</span>
                         </div>
@@ -99,18 +107,18 @@ export function HomeContinuation() {
                 <div className="container">
                     <div className="grid gap-16 border-b border-white/20 pb-20 md:grid-cols-[2fr_1fr_1fr]">
                         <div>
-                            <p className="max-w-lg text-[clamp(2.3rem,4vw,4.5rem)] font-medium leading-[0.95] tracking-[-0.05em]">Good ideas look better in your inbox.</p>
+                            <p className="max-w-lg text-[clamp(2.3rem,4vw,4.5rem)] font-medium leading-[0.95] tracking-[-0.05em]">{fa ? "ایده‌های خوب در صندوق ورودی تو بهتر دیده می‌شوند." : "Good ideas look better in your inbox."}</p>
                             <form className="mt-10 flex max-w-xl border-b border-white/40 pb-3">
                                 <label className="sr-only" htmlFor="newsletter-email">Email address</label>
-                                <input id="newsletter-email" type="email" placeholder="Email address" className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-white/40" />
-                                <button type="submit" className="text-sm font-medium">Join ↗</button>
+                                <input id="newsletter-email" type="email" placeholder={fa ? "آدرس ایمیل" : "Email address"} className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-white/40" />
+                                <button type="submit" className="text-sm font-medium">{fa ? "عضویت" : "Join"} ↗</button>
                             </form>
                         </div>
                         <div className="flex flex-col items-start gap-4 text-sm">
-                            <span className="mb-2 text-xs uppercase tracking-[0.16em] text-white/40">Explore</span>
-                            <Link href="/t-shirts">T-Shirts</Link>
-                            <Link href="/collections">Collections</Link>
-                            <Link href="/about">About</Link>
+                            <span className="mb-2 text-xs uppercase tracking-[0.16em] text-white/40">{fa ? "کاوش" : "Explore"}</span>
+                            <Link href="/t-shirts">{fa ? "تیشرت‌ها" : "T-Shirts"}</Link>
+                            <Link href="/collections">{fa ? "کالکشن‌ها" : "Collections"}</Link>
+                            <Link href="/about">{fa ? "درباره ما" : "About"}</Link>
                         </div>
                         <div className="flex flex-col items-start gap-4 text-sm">
                             <span className="mb-2 text-xs uppercase tracking-[0.16em] text-white/40">Elsewhere</span>
@@ -120,7 +128,7 @@ export function HomeContinuation() {
                     </div>
                     <div className="flex flex-col gap-6 pt-8 text-xs text-white/45 sm:flex-row sm:items-center sm:justify-between">
                         <span>© 2026 Avoocado Studio</span>
-                        <span>Original apparel for curious people.</span>
+                        <span>{fa ? "لباس‌های اورجینال برای آدم‌های کنجکاو." : "Original apparel for curious people."}</span>
                     </div>
                     <div className="overflow-hidden pt-12 text-center text-[clamp(4rem,17vw,18rem)] font-bold leading-[0.7] tracking-[-0.08em] text-white">AVOOCADO</div>
                 </div>

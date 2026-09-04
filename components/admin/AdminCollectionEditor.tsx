@@ -73,7 +73,8 @@ function skuFrom(design: DesignDraft, variant: VariantDraft) {
 
 export function AdminCollectionEditor({ collectionId }: Props) {
   const router = useRouter();
-  const fileRef = useRef<HTMLInputElement>(null);
+  const newFileRef = useRef<HTMLInputElement>(null);
+  const editFileRef = useRef<HTMLInputElement>(null);
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [unauthorized, setUnauthorized] = useState(false);
   const [collection, setCollection] = useState({
@@ -84,7 +85,9 @@ export function AdminCollectionEditor({ collectionId }: Props) {
   });
   const [collectionSlugTouched, setCollectionSlugTouched] = useState(false);
   const [design, setDesign] = useState<DesignDraft>(emptyDesign);
+  const [newDesign, setNewDesign] = useState<DesignDraft>(emptyDesign);
   const [designSlugTouched, setDesignSlugTouched] = useState(false);
+  const [newDesignSlugTouched, setNewDesignSlugTouched] = useState(false);
   const [editingDesign, setEditingDesign] = useState<Design | null>(null);
   const [variant, setVariant] = useState<VariantDraft>({
     sku: "",
@@ -169,6 +172,13 @@ export function AdminCollectionEditor({ collectionId }: Props) {
       slug: designSlugTouched ? item.slug : slugify(value),
     }));
   }
+  function updateNewDesignName(value: string) {
+    setNewDesign((item) => ({
+      ...item,
+      name: value,
+      slug: newDesignSlugTouched ? item.slug : slugify(value),
+    }));
+  }
   function updateVariant(patch: Partial<VariantDraft>) {
     setVariant((item) => {
       const next = { ...item, ...patch };
@@ -224,36 +234,46 @@ export function AdminCollectionEditor({ collectionId }: Props) {
     }
   }
 
-  async function saveDesign(event: FormEvent<HTMLFormElement>) {
+  async function saveDesign(
+    event: FormEvent<HTMLFormElement>,
+    draft: DesignDraft,
+    createMode = false,
+  ) {
     event.preventDefault();
     if (!collectionId) return;
     setBusy(true);
     setError("");
     setMessage("");
     try {
-      let artworkKey = design.artworkKey;
+      let artworkKey = draft.artworkKey;
       const file = new FormData(event.currentTarget).get("artwork");
       if (file instanceof File && file.size)
         artworkKey = await uploadArtwork(file);
       const data = await adminRequest("/api/admin/catalog", {
-        method: design.id ? "PATCH" : "POST",
+        method: draft.id ? "PATCH" : "POST",
         body: JSON.stringify({
           entity: "design",
-          ...design,
+          ...draft,
           artworkKey,
           collectionId,
-          basePrice: Number(design.basePrice),
-          baseCost: Number(design.baseCost),
+          basePrice: Number(draft.basePrice),
+          baseCost: Number(draft.baseCost),
         }),
       });
       setCatalog(data);
       setMessage(
-        design.id ? "تغییرات طرح ذخیره شد." : "طرح جدید به کالکشن اضافه شد.",
+        draft.id ? "تغییرات طرح ذخیره شد." : "طرح جدید به کالکشن اضافه شد.",
       );
-      setDesign(emptyDesign);
-      setDesignSlugTouched(false);
-      setEditingDesign(null);
-      if (fileRef.current) fileRef.current.value = "";
+      if (createMode) {
+        setNewDesign(emptyDesign);
+        setNewDesignSlugTouched(false);
+        if (newFileRef.current) newFileRef.current.value = "";
+      } else {
+        setDesign(emptyDesign);
+        setDesignSlugTouched(false);
+        setEditingDesign(null);
+        if (editFileRef.current) editFileRef.current.value = "";
+      }
     } catch (reason) {
       setError(
         reason instanceof Error ? reason.message : "ذخیره طرح انجام نشد.",
@@ -591,14 +611,14 @@ export function AdminCollectionEditor({ collectionId }: Props) {
               </p>
             </div>
             <DesignForm
-              design={design}
-              setDesign={setDesign}
-              setSlugTouched={setDesignSlugTouched}
-              updateName={updateDesignName}
+              design={newDesign}
+              setDesign={setNewDesign}
+              setSlugTouched={setNewDesignSlugTouched}
+              updateName={updateNewDesignName}
               placements={catalog.placements}
-              fileRef={fileRef}
+              fileRef={newFileRef}
               pending={pending}
-              onSubmit={saveDesign}
+              onSubmit={(event) => void saveDesign(event, newDesign, true)}
               createMode
             />
             <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -678,9 +698,9 @@ export function AdminCollectionEditor({ collectionId }: Props) {
               setSlugTouched={setDesignSlugTouched}
               updateName={updateDesignName}
               placements={catalog.placements}
-              fileRef={fileRef}
+              fileRef={editFileRef}
               pending={pending}
-              onSubmit={saveDesign}
+              onSubmit={(event) => void saveDesign(event, design)}
             />
             <div className="mt-8 border-t border-black/10 pt-8">
               <h3 className="text-xl font-black">قیمت و موجودی</h3>
