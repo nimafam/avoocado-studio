@@ -18,6 +18,7 @@ type Payload = {
   name?: string;
   description?: string;
   basePrice?: number;
+  baseCost?: number;
   artworkKey?: string | null;
   collectionId?: number;
   placements?: string[];
@@ -25,6 +26,7 @@ type Payload = {
   designId?: number;
   sku?: string;
   price?: number;
+  costPrice?: number;
   stockQuantity?: number;
   materialId?: string;
   sizeId?: string;
@@ -112,13 +114,14 @@ export async function POST(request: Request) {
           "Design name, slug, collection and at least one placement are required.",
         );
       await env.DB.prepare(
-        "INSERT INTO designs (slug, name, description, base_price, artwork_key, active) VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO designs (slug, name, description, base_price, base_cost, artwork_key, active) VALUES (?, ?, ?, ?, ?, ?, ?)",
       )
         .bind(
           body.slug,
           body.name.trim(),
           body.description?.trim() ?? "",
           Math.max(0, Number(body.basePrice) || 0),
+          Math.max(0, Number(body.baseCost) || 0),
           body.artworkKey ?? null,
           body.active === false ? 0 : 1,
         )
@@ -151,7 +154,7 @@ export async function POST(request: Request) {
       )
         return badRequest("All variant fields are required.");
       await env.DB.prepare(
-        "INSERT INTO product_variants (design_id, material_id, size_id, fit_id, color_id, print_method_id, sku, price, stock_quantity, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO product_variants (design_id, material_id, size_id, fit_id, color_id, print_method_id, sku, price, cost_price, stock_quantity, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       )
         .bind(
           body.designId,
@@ -162,6 +165,7 @@ export async function POST(request: Request) {
           body.printMethodId,
           body.sku.trim(),
           Math.max(0, Number(body.price) || 0),
+          Math.max(0, Number(body.costPrice) || 0),
           Math.max(0, Math.floor(Number(body.stockQuantity) || 0)),
           body.active === false ? 0 : 1,
         )
@@ -204,13 +208,14 @@ export async function PATCH(request: Request) {
           "Design name, slug, collection and at least one placement are required.",
         );
       await env.DB.prepare(
-        "UPDATE designs SET slug = ?, name = ?, description = ?, base_price = ?, artwork_key = ?, active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        "UPDATE designs SET slug = ?, name = ?, description = ?, base_price = ?, base_cost = ?, artwork_key = ?, active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
       )
         .bind(
           body.slug,
           body.name.trim(),
           body.description?.trim() ?? "",
           Math.max(0, Number(body.basePrice) || 0),
+          Math.max(0, Number(body.baseCost) || 0),
           body.artworkKey ?? null,
           body.active === false ? 0 : 1,
           body.id,
@@ -244,7 +249,7 @@ export async function PATCH(request: Request) {
       )
         return badRequest("All variant fields are required.");
       await env.DB.prepare(
-        "UPDATE product_variants SET design_id = ?, material_id = ?, size_id = ?, fit_id = ?, color_id = ?, print_method_id = ?, sku = ?, price = ?, stock_quantity = ?, active = ? WHERE id = ?",
+        "UPDATE product_variants SET design_id = ?, material_id = ?, size_id = ?, fit_id = ?, color_id = ?, print_method_id = ?, sku = ?, price = ?, cost_price = ?, stock_quantity = ?, active = ? WHERE id = ?",
       )
         .bind(
           body.designId,
@@ -255,6 +260,7 @@ export async function PATCH(request: Request) {
           body.printMethodId,
           body.sku.trim(),
           Math.max(0, Number(body.price) || 0),
+          Math.max(0, Number(body.costPrice) || 0),
           Math.max(0, Math.floor(Number(body.stockQuantity) || 0)),
           body.active === false ? 0 : 1,
           body.id,

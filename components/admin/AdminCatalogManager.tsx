@@ -97,7 +97,7 @@ export function AdminCatalogManager() {
           <nav className="flex gap-2">
             <Link
               href="/admin/orders"
-              className="rounded-full border border-black/10 px-5 py-2.5 text-sm font-bold transition hover:bg-black hover:text-white"
+              className="rounded-full border border-black/10 px-5 py-2.5 text-sm font-bold !text-black transition hover:bg-black hover:!text-white"
             >
               سفارش‌ها
             </Link>
@@ -139,7 +139,7 @@ export function AdminCatalogManager() {
             </div>
             <Link
               href="/admin/collections/new"
-              className="rounded-full bg-black px-6 py-3 text-sm font-bold text-white transition hover:bg-lime-300 hover:text-black"
+              className="rounded-full bg-black px-6 py-3 text-sm font-bold !text-white transition hover:bg-lime-300 hover:!text-black"
             >
               + کالکشن جدید
             </Link>

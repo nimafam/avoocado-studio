@@ -4,6 +4,7 @@ import "@fontsource/ubuntu/500.css";
 import "@fontsource/ubuntu/700.css";
 
 import type { Metadata } from "next";
+import { LanguageProvider } from "@/components/i18n/LanguageProvider";
 
 import "./globals.css";
 
@@ -13,5 +14,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body>{children}</body></html>;
+  return <html lang="fa" dir="rtl" suppressHydrationWarning><body><LanguageProvider>{children}</LanguageProvider></body></html>;
 }

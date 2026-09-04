@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import { OrderCheckout } from "@/components/customizer/OrderCheckout";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import type { PublicProduct, PublicVariant } from "@/lib/catalog/cloudflare-repository";
 
 type Dimension = "fitId" | "materialId" | "sizeId" | "colorId";
@@ -19,22 +20,23 @@ function Choice({ active, disabled, children, onClick }: { active: boolean; disa
 }
 
 export function ReadyMadeProductConfigurator({ product, variants }: { product: PublicProduct; variants: PublicVariant[] }) {
+    const { locale } = useLanguage(); const fa = locale === "fa";
     const firstAvailable = variants.find((variant) => variant.stockQuantity > 0) ?? variants[0];
     const [selected, setSelected] = useState(firstAvailable);
     const [side, setSide] = useState<"front" | "back">("front");
     const placements = product.placements?.split(",").filter((value): value is Placement => validPlacements.includes(value as Placement)) ?? [];
     const placement = placements.includes("center") ? "center" : placements[0] ?? "center";
-    const fits = useMemo(() => uniqueOptions(variants, "fitId", (item) => item.fitNameEn), [variants]);
-    const materials = useMemo(() => uniqueOptions(variants, "materialId", (item) => item.materialNameEn), [variants]);
+    const fits = useMemo(() => uniqueOptions(variants, "fitId", (item) => fa ? item.fitNameFa : item.fitNameEn), [variants, fa]);
+    const materials = useMemo(() => uniqueOptions(variants, "materialId", (item) => fa ? item.materialNameFa : item.materialNameEn), [variants, fa]);
     const sizes = useMemo(() => uniqueOptions(variants, "sizeId", (item) => item.sizeLabel), [variants]);
-    const colors = useMemo(() => uniqueOptions(variants, "colorId", (item) => ({ name: item.colorNameEn, hex: item.colorHex })), [variants]);
+    const colors = useMemo(() => uniqueOptions(variants, "colorId", (item) => ({ name: fa ? item.colorNameFa : item.colorNameEn, hex: item.colorHex })), [variants, fa]);
 
     function choose(field: Dimension, value: string) {
         const exact = variants.find((variant) => variant[field] === value && variant.stockQuantity > 0 && (["fitId", "materialId", "sizeId", "colorId"] as Dimension[]).every((key) => key === field || variant[key] === selected[key]));
         setSelected(exact ?? variants.find((variant) => variant[field] === value && variant.stockQuantity > 0) ?? variants.find((variant) => variant[field] === value) ?? selected);
     }
 
-    if (!selected) return <p className="border border-dashed border-black/20 p-5 text-sm text-black/45">No purchasable variant has been added for this T-shirt yet.</p>;
+    if (!selected) return <p className="border border-dashed border-black/20 p-5 text-sm text-black/45">{fa ? "هنوز تنوع قابل سفارشی برای این تیشرت ثبت نشده است." : "No purchasable variant has been added for this T-shirt yet."}</p>;
     const fit = selected.fitId === "boxy" ? "boxy" : "loose";
     const shirtSource = `/models/tshirts/colors/${fit}-fit-${selected.colorId}-${side}.webp`;
     const artworkSource = product.artworkKey?.startsWith("https://storage.avoocadostudio.com/uploads/") ? `/api/storage-image?url=${encodeURIComponent(product.artworkKey)}` : product.artworkKey;

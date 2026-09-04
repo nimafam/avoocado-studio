@@ -12,6 +12,7 @@ export type Design = {
   name: string;
   description: string;
   basePrice: number;
+  baseCost: number;
   artworkKey: string | null;
   active: number;
   collectionId: number | null;
@@ -25,6 +26,7 @@ export type Variant = {
   designName: string;
   sku: string;
   price: number;
+  costPrice: number;
   stockQuantity: number;
   materialId: string;
   sizeId: string;

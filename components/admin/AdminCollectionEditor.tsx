@@ -20,6 +20,7 @@ type DesignDraft = {
   slug: string;
   description: string;
   basePrice: string;
+  baseCost: string;
   artworkKey: string;
   placements: string[];
   active: boolean;
@@ -28,6 +29,7 @@ type VariantDraft = {
   id?: number;
   sku: string;
   price: string;
+  costPrice: string;
   stockQuantity: string;
   materialId: string;
   sizeId: string;
@@ -41,6 +43,7 @@ const emptyDesign: DesignDraft = {
   slug: "",
   description: "",
   basePrice: "0",
+  baseCost: "0",
   artworkKey: "",
   placements: ["center"],
   active: true,
@@ -86,6 +89,7 @@ export function AdminCollectionEditor({ collectionId }: Props) {
   const [variant, setVariant] = useState<VariantDraft>({
     sku: "",
     price: "0",
+    costPrice: "0",
     stockQuantity: "0",
     materialId: "",
     sizeId: "",
@@ -239,6 +243,7 @@ export function AdminCollectionEditor({ collectionId }: Props) {
           artworkKey,
           collectionId,
           basePrice: Number(design.basePrice),
+          baseCost: Number(design.baseCost),
         }),
       });
       setCatalog(data);
@@ -265,6 +270,7 @@ export function AdminCollectionEditor({ collectionId }: Props) {
       slug: item.slug,
       description: item.description,
       basePrice: String(item.basePrice),
+      baseCost: String(item.baseCost),
       artworkKey: item.artworkKey ?? "",
       placements: item.placements?.split(",").filter(Boolean) ?? ["center"],
       active: Boolean(item.active),
@@ -277,6 +283,7 @@ export function AdminCollectionEditor({ collectionId }: Props) {
       ...value,
       sku: skuFrom(draft, value),
       price: String(item.basePrice),
+      costPrice: String(item.baseCost),
       stockQuantity: "0",
     }));
   }
@@ -297,6 +304,7 @@ export function AdminCollectionEditor({ collectionId }: Props) {
           ...variant,
             sku: skuTouched ? variant.sku : skuFrom(design, variant),
           price: Number(variant.price),
+          costPrice: Number(variant.costPrice),
           stockQuantity: Number(variant.stockQuantity),
         }),
       });
@@ -308,6 +316,7 @@ export function AdminCollectionEditor({ collectionId }: Props) {
         ...value,
         sku: "",
         price: design.basePrice,
+        costPrice: design.baseCost,
         stockQuantity: "0",
       }));
     } catch (reason) {
@@ -325,6 +334,7 @@ export function AdminCollectionEditor({ collectionId }: Props) {
     setVariant({
       sku: item.sku,
       price: String(item.price),
+      costPrice: String(item.costPrice),
       stockQuantity: String(item.stockQuantity),
       materialId: item.materialId,
       sizeId: item.sizeId,
@@ -733,7 +743,7 @@ export function AdminCollectionEditor({ collectionId }: Props) {
                     className="mt-2 w-full rounded-xl border border-black/12 bg-[#fafaf8] p-3 text-left font-mono outline-none focus:border-black"
                   />
                 </label>
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <div className="mt-4 grid gap-4 md:grid-cols-3">
                   <label className="rounded-2xl border border-black/10 bg-[#fafaf8] p-4 text-sm font-bold">
                     <span className="text-black/45">قیمت فروش</span>
                     <div className="mt-2 flex items-center">
@@ -749,6 +759,25 @@ export function AdminCollectionEditor({ collectionId }: Props) {
                       />
                       <span className="text-xs text-black/40">تومان</span>
                     </div>
+                  </label>
+                  <label className="rounded-2xl border border-black/10 bg-[#fafaf8] p-4 text-sm font-bold">
+                    <span className="text-black/45">قیمت تمام‌شده</span>
+                    <div className="mt-2 flex items-center">
+                      <input
+                        required
+                        type="number"
+                        min="0"
+                        value={variant.costPrice}
+                        onChange={(e) =>
+                          updateVariant({ costPrice: e.target.value })
+                        }
+                        className="min-w-0 flex-1 bg-transparent text-2xl font-black outline-none"
+                      />
+                      <span className="text-xs text-black/40">تومان</span>
+                    </div>
+                    <span className="mt-2 block text-xs font-normal text-[#668000]">
+                      سود واحد: {Math.max(0, Number(variant.price) - Number(variant.costPrice)).toLocaleString("fa-IR")} تومان
+                    </span>
                   </label>
                   <label className="rounded-2xl border border-black/10 bg-[#fafaf8] p-4 text-sm font-bold">
                     <span className="text-black/45">موجودی قابل فروش</span>
@@ -785,6 +814,7 @@ export function AdminCollectionEditor({ collectionId }: Props) {
                       {item.sku}
                     </code>
                     <span>{item.price.toLocaleString("fa-IR")} تومان</span>
+                    <span className="text-[#668000]">سود {(item.price - item.costPrice).toLocaleString("fa-IR")}</span>
                     <span className="rounded-full bg-black/5 px-2 py-1">
                       {item.stockQuantity} عدد
                     </span>
@@ -928,19 +958,16 @@ function DesignForm({
             </span>
           ) : null}
         </label>
-        <label className="text-sm font-bold">
-          قیمت پایه
-          <input
-            required
-            type="number"
-            min="0"
-            value={design.basePrice}
-            onChange={(e) =>
-              setDesign({ ...design, basePrice: e.target.value })
-            }
-            className="mt-2 w-full rounded-xl border border-black/12 bg-white p-3 outline-none focus:border-black"
-          />
-        </label>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="text-sm font-bold">
+            قیمت فروش پایه
+            <input required type="number" min="0" value={design.basePrice} onChange={(e) => setDesign({ ...design, basePrice: e.target.value })} className="mt-2 w-full rounded-xl border border-black/12 bg-white p-3 outline-none focus:border-black" />
+          </label>
+          <label className="text-sm font-bold">
+            قیمت تمام‌شده پایه
+            <input required type="number" min="0" value={design.baseCost} onChange={(e) => setDesign({ ...design, baseCost: e.target.value })} className="mt-2 w-full rounded-xl border border-black/12 bg-white p-3 outline-none focus:border-black" />
+          </label>
+        </div>
       </div>
       <fieldset className="mt-4">
         <legend className="text-sm font-bold">جانمایی‌های مجاز</legend>

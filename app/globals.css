@@ -1,6 +1,31 @@
 @import "tailwindcss";
 @import "../styles/tokens.css";
 
+@font-face {
+  font-family: "Anjoman";
+  src: url("/fonts/anjoman/AnjomanMaxFN-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Anjoman";
+  src: url("/fonts/anjoman/AnjomanMaxFN-Medium.woff2") format("woff2");
+  font-weight: 500 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Anjoman";
+  src: url("/fonts/anjoman/AnjomanMaxFN-Bold.woff2") format("woff2");
+  font-weight: 700 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Anjoman";
+  src: url("/fonts/anjoman/AnjomanMaxFN-Black.woff2") format("woff2");
+  font-weight: 900;
+  font-display: swap;
+}
+
 *,
 *::before,
 *::after { box-sizing: border-box; }
@@ -17,6 +42,11 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html[lang="fa"] body,
+:lang(fa) {
+  font-family: "Anjoman", var(--font-primary), sans-serif;
 }
 
 button:not(:disabled),
@@ -43,3 +73,9 @@ img, svg { display: block; max-width: 100%; }
   margin-inline: auto;
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+@media print {
+  @page { size: A4; margin: 0; }
+  .no-print { display: none !important; }
+  .invoice-sheet { width: 210mm; min-height: 297mm; }
+}

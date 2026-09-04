@@ -177,7 +177,7 @@ export async function getAdminCatalog() {
     const [categories, designs, variants, materials, sizes, fits, colors, printMethods] = await Promise.all([
         env.DB.prepare("SELECT id, slug, name_fa AS nameFa, name_en AS nameEn, sort_order AS sortOrder, active FROM design_categories ORDER BY sort_order, id").all(),
         env.DB.prepare(`
-            SELECT d.id, d.slug, d.name, d.description, d.base_price AS basePrice, d.artwork_key AS artworkKey,
+            SELECT d.id, d.slug, d.name, d.description, d.base_price AS basePrice, d.base_cost AS baseCost, d.artwork_key AS artworkKey,
                    d.active, c.id AS collectionId, c.name_en AS collectionName,
                    GROUP_CONCAT(dp.placement_id) AS placements
             FROM designs d
@@ -188,7 +188,7 @@ export async function getAdminCatalog() {
             ORDER BY d.updated_at DESC, d.id DESC
         `).all(),
         env.DB.prepare(`
-            SELECT v.id, v.design_id AS designId, d.name AS designName, v.sku, v.price,
+            SELECT v.id, v.design_id AS designId, d.name AS designName, v.sku, v.price, v.cost_price AS costPrice,
                    v.stock_quantity AS stockQuantity, v.material_id AS materialId,
                    v.size_id AS sizeId, v.fit_id AS fitId, v.color_id AS colorId,
                    v.print_method_id AS printMethodId, v.active
