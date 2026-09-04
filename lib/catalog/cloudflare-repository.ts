@@ -174,7 +174,7 @@ export async function getPublicCatalog() {
 }
 
 export async function getAdminCatalog() {
-    const [categories, designs] = await Promise.all([
+    const [categories, designs, variants, materials, sizes, fits, colors, printMethods] = await Promise.all([
         env.DB.prepare("SELECT id, slug, name_fa AS nameFa, name_en AS nameEn, sort_order AS sortOrder, active FROM design_categories ORDER BY sort_order, id").all(),
         env.DB.prepare(`
             SELECT d.id, d.slug, d.name, d.description, d.base_price AS basePrice, d.artwork_key AS artworkKey,
@@ -187,8 +187,26 @@ export async function getAdminCatalog() {
             GROUP BY d.id
             ORDER BY d.updated_at DESC, d.id DESC
         `).all(),
+        env.DB.prepare(`
+            SELECT v.id, v.design_id AS designId, d.name AS designName, v.sku, v.price,
+                   v.stock_quantity AS stockQuantity, v.material_id AS materialId,
+                   v.size_id AS sizeId, v.fit_id AS fitId, v.color_id AS colorId,
+                   v.print_method_id AS printMethodId, v.active
+            FROM product_variants v
+            JOIN designs d ON d.id = v.design_id
+            ORDER BY d.name, v.sku
+        `).all(),
+        env.DB.prepare("SELECT id, name_fa AS nameFa, name_en AS nameEn FROM shirt_materials WHERE active = 1 ORDER BY sort_order").all(),
+        env.DB.prepare("SELECT id, label FROM shirt_sizes WHERE active = 1 ORDER BY sort_order").all(),
+        env.DB.prepare("SELECT id, name_fa AS nameFa, name_en AS nameEn FROM shirt_fits WHERE active = 1 ORDER BY sort_order").all(),
+        env.DB.prepare("SELECT id, name_fa AS nameFa, name_en AS nameEn, hex FROM shirt_colors WHERE active = 1 ORDER BY sort_order").all(),
+        env.DB.prepare("SELECT id, name_fa AS nameFa, name_en AS nameEn FROM print_methods WHERE active = 1 ORDER BY id").all(),
     ]);
-    return { categories: categories.results ?? [], designs: designs.results ?? [], placements: PLACEMENTS };
+    return {
+        categories: categories.results ?? [], designs: designs.results ?? [], variants: variants.results ?? [],
+        materials: materials.results ?? [], sizes: sizes.results ?? [], fits: fits.results ?? [], colors: colors.results ?? [],
+        printMethods: printMethods.results ?? [], placements: PLACEMENTS,
+    };
 }
 
 export function validSlug(value: unknown) {

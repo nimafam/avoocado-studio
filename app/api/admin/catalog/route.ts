@@ -6,7 +6,7 @@ import { deleteHostedFile } from "@/lib/storage/hosted-files";
 export const dynamic = "force-dynamic";
 
 type Payload = {
-    entity?: "collection" | "design";
+    entity?: "collection" | "design" | "variant";
     id?: number;
     slug?: string;
     nameFa?: string;
@@ -18,6 +18,15 @@ type Payload = {
     collectionId?: number;
     placements?: string[];
     active?: boolean;
+    designId?: number;
+    sku?: string;
+    price?: number;
+    stockQuantity?: number;
+    materialId?: string;
+    sizeId?: string;
+    fitId?: string;
+    colorId?: string;
+    printMethodId?: string;
 };
 
 function unauthorized() { return Response.json({ error: "Unauthorized" }, { status: 401 }); }
@@ -49,6 +58,10 @@ export async function POST(request: Request) {
                 env.DB.prepare("INSERT INTO design_category_assignments (design_id, category_id) VALUES (?, ?)").bind(design.id, body.collectionId),
                 ...body.placements.map((placement) => env.DB.prepare("INSERT INTO design_placements (design_id, placement_id) VALUES (?, ?)").bind(design.id, placement)),
             ]);
+        } else if (body.entity === "variant") {
+            if (!Number.isInteger(body.designId) || !body.sku?.trim() || !body.materialId || !body.sizeId || !body.fitId || !body.colorId || !body.printMethodId) return badRequest("All variant fields are required.");
+            await env.DB.prepare("INSERT INTO product_variants (design_id, material_id, size_id, fit_id, color_id, print_method_id, sku, price, stock_quantity, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                .bind(body.designId, body.materialId, body.sizeId, body.fitId, body.colorId, body.printMethodId, body.sku.trim(), Math.max(0, Number(body.price) || 0), Math.max(0, Math.floor(Number(body.stockQuantity) || 0)), body.active === false ? 0 : 1).run();
         } else return badRequest("Unknown entity.");
         return Response.json(await getAdminCatalog(), { status: 201 });
     } catch (error) {
@@ -75,6 +88,10 @@ export async function PATCH(request: Request) {
                 env.DB.prepare("INSERT INTO design_category_assignments (design_id, category_id) VALUES (?, ?)").bind(body.id, body.collectionId),
                 ...body.placements.map((placement) => env.DB.prepare("INSERT INTO design_placements (design_id, placement_id) VALUES (?, ?)").bind(body.id, placement)),
             ]);
+        } else if (body.entity === "variant") {
+            if (!Number.isInteger(body.designId) || !body.sku?.trim() || !body.materialId || !body.sizeId || !body.fitId || !body.colorId || !body.printMethodId) return badRequest("All variant fields are required.");
+            await env.DB.prepare("UPDATE product_variants SET design_id = ?, material_id = ?, size_id = ?, fit_id = ?, color_id = ?, print_method_id = ?, sku = ?, price = ?, stock_quantity = ?, active = ? WHERE id = ?")
+                .bind(body.designId, body.materialId, body.sizeId, body.fitId, body.colorId, body.printMethodId, body.sku.trim(), Math.max(0, Number(body.price) || 0), Math.max(0, Math.floor(Number(body.stockQuantity) || 0)), body.active === false ? 0 : 1, body.id).run();
         } else return badRequest("Unknown entity.");
         return Response.json(await getAdminCatalog());
     } catch (error) {
@@ -97,6 +114,8 @@ export async function DELETE(request: Request) {
             const design = await env.DB.prepare("SELECT artwork_key AS artworkKey FROM designs WHERE id = ?").bind(id).first<{ artworkKey: string | null }>();
             await env.DB.prepare("DELETE FROM designs WHERE id = ?").bind(id).run();
             if (design?.artworkKey?.startsWith("https://")) await deleteHostedFile(design.artworkKey);
+        } else if (entity === "variant") {
+            await env.DB.prepare("DELETE FROM product_variants WHERE id = ?").bind(id).run();
         } else return badRequest("Unknown entity.");
         return Response.json(await getAdminCatalog());
     } catch {

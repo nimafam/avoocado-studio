@@ -6,10 +6,13 @@ type Props = {
     designSlug: string; designName: string; collectionSlug: string; artworkUrl: string | null; artworkMark?: string; artworkTone?: string;
     fitId: "loose" | "boxy"; colorId: string; colorName: string; materialId: string; materialName: string; sizeId: string;
     printSide: "front" | "back"; placementId: "left" | "right" | "center" | "large" | "lower" | "upper"; unitPrice: number;
+    variantSku?: string;
+    maxQuantity?: number;
 };
 
 function loadImage(source: string) {
-    return new Promise<HTMLImageElement>((resolve, reject) => { const image = new Image(); image.onload = () => resolve(image); image.onerror = reject; image.src = source; });
+    const safeSource = source.startsWith("https://storage.avoocadostudio.com/uploads/") ? `/api/storage-image?url=${encodeURIComponent(source)}` : source;
+    return new Promise<HTMLImageElement>((resolve, reject) => { const image = new Image(); image.onload = () => resolve(image); image.onerror = reject; image.src = safeSource; });
 }
 
 function placementBox(id: Props["placementId"]) {
@@ -33,12 +36,12 @@ async function renderPreview(side: "front" | "back", props: Props) {
 }
 
 export function OrderCheckout(props: Props) {
-    const [open, setOpen] = useState(false); const [busy, setBusy] = useState(false); const [message, setMessage] = useState(""); const [orderCode, setOrderCode] = useState("");
+    const [open, setOpen] = useState(false); const [busy, setBusy] = useState(false); const [message, setMessage] = useState(""); const [orderCode, setOrderCode] = useState(""); const [quantity, setQuantity] = useState(1);
     async function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault(); setBusy(true); setMessage("");
         try {
             const fields = new FormData(event.currentTarget); const [front, back] = await Promise.all([renderPreview("front", props), renderPreview("back", props)]);
-            const payload = { firstName: fields.get("firstName"), lastName: fields.get("lastName"), phone: fields.get("phone"), website: fields.get("website"), designSlug: props.designSlug, designName: props.designName, collectionSlug: props.collectionSlug, materialId: props.materialId, materialName: props.materialName, sizeId: props.sizeId, fitId: props.fitId, colorId: props.colorId, colorName: props.colorName, printSide: props.printSide, placementId: props.placementId, quantity: Number(fields.get("quantity")) || 1, unitPrice: props.unitPrice };
+            const payload = { firstName: fields.get("firstName"), lastName: fields.get("lastName"), phone: fields.get("phone"), website: fields.get("website"), designSlug: props.designSlug, designName: props.designName, collectionSlug: props.collectionSlug, materialId: props.materialId, materialName: props.materialName, sizeId: props.sizeId, fitId: props.fitId, colorId: props.colorId, colorName: props.colorName, printSide: props.printSide, placementId: props.placementId, quantity, unitPrice: props.unitPrice, variantSku: props.variantSku };
             const form = new FormData(); form.set("order", JSON.stringify(payload)); form.set("front", front, "front.webp"); form.set("back", back, "back.webp");
             const response = await fetch("/api/orders", { method: "POST", body: form }); const data = await response.json(); if (!response.ok) throw new Error(data.error || "ثبت سفارش انجام نشد.");
             setOrderCode(data.orderCode); event.currentTarget.reset();
@@ -46,7 +49,8 @@ export function OrderCheckout(props: Props) {
         finally { setBusy(false); }
     }
     if (orderCode) return <div className="border border-green-700/30 bg-green-50 p-5 text-sm leading-6 text-green-900"><strong>سفارش ثبت شد.</strong><br/>کد پیگیری: <span className="font-mono">{orderCode}</span></div>;
-    return <div><button type="button" onClick={() => setOpen((value) => !value)} className="w-full bg-[var(--color-primary)] py-5 text-sm font-medium transition hover:bg-black hover:text-white">{open ? "بستن فرم سفارش" : "ثبت سفارش"}</button>{open ? <form onSubmit={submit} dir="rtl" className="mt-4 space-y-3 border border-black/15 p-4"><div className="grid grid-cols-2 gap-3"><input name="firstName" required maxLength={60} placeholder="نام" className="border border-black/20 p-3 text-sm"/><input name="lastName" required maxLength={80} placeholder="نام خانوادگی" className="border border-black/20 p-3 text-sm"/></div><input name="phone" required inputMode="tel" pattern="[+0-9 ()-]{8,20}" placeholder="شماره تماس" className="w-full border border-black/20 p-3 text-sm"/><label className="flex items-center justify-between border border-black/20 p-3 text-sm"><span>تعداد</span><input name="quantity" type="number" min="1" max="20" defaultValue="1" className="w-20 border border-black/15 p-2 text-center"/></label><input name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true"/><p className="text-xs leading-5 text-black/45">با ثبت سفارش، مشخصات تماس و تصاویر نهایی برای پیگیری سفارش ذخیره می‌شوند.</p><button disabled={busy} className="w-full bg-black py-4 text-sm text-white disabled:opacity-50">{busy ? "در حال ساخت تصاویر…" : "تأیید و ثبت سفارش"}</button>{message ? <p className="text-sm text-red-700">{message}</p> : null}</form> : null}</div>;
+    const maxQuantity = Math.max(1, Math.min(20, props.maxQuantity ?? 20));
+    return <div><div className="mb-4 flex items-center justify-between border-y border-black/15 py-4 text-sm"><label htmlFor="order-quantity">تعداد</label><div className="flex items-center gap-3"><input id="order-quantity" name="quantity" type="number" min="1" max={maxQuantity} value={quantity} onChange={(event) => setQuantity(Math.min(maxQuantity, Math.max(1, Number(event.target.value) || 1)))} className="w-20 border border-black/15 p-2 text-center"/><strong>{(props.unitPrice * quantity).toLocaleString("fa-IR")} تومان</strong></div></div><button type="button" onClick={() => setOpen((value) => !value)} className="w-full bg-[var(--color-primary)] py-5 text-sm font-medium transition hover:bg-black hover:text-white">{open ? "بستن فرم سفارش" : "ثبت سفارش"}</button>{open ? <form onSubmit={submit} dir="rtl" className="mt-4 space-y-3 border border-black/15 p-4"><div className="grid grid-cols-2 gap-3"><input name="firstName" required maxLength={60} placeholder="نام" className="border border-black/20 p-3 text-sm"/><input name="lastName" required maxLength={80} placeholder="نام خانوادگی" className="border border-black/20 p-3 text-sm"/></div><input name="phone" required inputMode="tel" pattern="[+0-9 ()-]{8,20}" placeholder="شماره تماس" className="w-full border border-black/20 p-3 text-sm"/><input name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true"/><p className="text-xs leading-5 text-black/45">با ثبت سفارش، مشخصات تماس و تصاویر نهایی برای پیگیری سفارش ذخیره می‌شوند.</p><button disabled={busy} className="w-full bg-black py-4 text-sm text-white disabled:opacity-50">{busy ? "در حال ساخت تصاویر…" : "تأیید و ثبت سفارش"}</button>{message ? <p className="text-sm text-red-700">{message}</p> : null}</form> : null}</div>;
 }
 
 
