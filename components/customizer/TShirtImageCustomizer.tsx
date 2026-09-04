@@ -20,6 +20,7 @@ type CustomizerArtwork = {
   slug: string;
   name: string;
   collectionSlug: string;
+  basePrice: number;
   artworkUrl: string | null;
   placements: Placement[];
   mark?: string;
@@ -40,6 +41,7 @@ const fallbackCategories: CustomizerCategory[] = designCategories.map(
 );
 const fallbackArtworks: CustomizerArtwork[] = products.map((product) => ({
   ...product,
+  basePrice: product.price,
   collectionSlug:
     artworkCollectionBySlug[product.slug] ?? product.collectionSlug,
   artworkUrl: null,
@@ -114,12 +116,14 @@ export function TShirtImageCustomizer() {
             slug: string;
             name: string;
             collectionSlug: string;
+            basePrice: number;
             artworkKey: string | null;
             placements: string | null;
           }) => ({
             slug: item.slug,
             name: item.name,
             collectionSlug: item.collectionSlug,
+            basePrice: Number(item.basePrice) || 0,
             artworkUrl: item.artworkKey?.startsWith("https://")
               ? item.artworkKey
               : null,
@@ -457,7 +461,7 @@ export function TShirtImageCustomizer() {
               sizeId={shirtSizes[size]}
               printSide={printSide}
               placementId={placement}
-              unitPrice={46}
+              unitPrice={selectedArtwork.basePrice}
             />
           ) : (
             <button

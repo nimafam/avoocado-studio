@@ -322,7 +322,7 @@ export function AdminCollectionEditor({ collectionId }: Props) {
           id: editingVariantId,
           designId: editingDesign.id,
           ...variant,
-            sku: skuTouched ? variant.sku : skuFrom(design, variant),
+          sku: skuTouched ? variant.sku : skuFrom(design, variant),
           price: Number(variant.price),
           costPrice: Number(variant.costPrice),
           stockQuantity: Number(variant.stockQuantity),
@@ -796,7 +796,12 @@ export function AdminCollectionEditor({ collectionId }: Props) {
                       <span className="text-xs text-black/40">تومان</span>
                     </div>
                     <span className="mt-2 block text-xs font-normal text-[#668000]">
-                      سود واحد: {Math.max(0, Number(variant.price) - Number(variant.costPrice)).toLocaleString("fa-IR")} تومان
+                      سود واحد:{" "}
+                      {Math.max(
+                        0,
+                        Number(variant.price) - Number(variant.costPrice),
+                      ).toLocaleString("fa-IR")}{" "}
+                      تومان
                     </span>
                   </label>
                   <label className="rounded-2xl border border-black/10 bg-[#fafaf8] p-4 text-sm font-bold">
@@ -834,7 +839,10 @@ export function AdminCollectionEditor({ collectionId }: Props) {
                       {item.sku}
                     </code>
                     <span>{item.price.toLocaleString("fa-IR")} تومان</span>
-                    <span className="text-[#668000]">سود {(item.price - item.costPrice).toLocaleString("fa-IR")}</span>
+                    <span className="text-[#668000]">
+                      سود{" "}
+                      {(item.price - item.costPrice).toLocaleString("fa-IR")}
+                    </span>
                     <span className="rounded-full bg-black/5 px-2 py-1">
                       {item.stockQuantity} عدد
                     </span>
@@ -981,11 +989,33 @@ function DesignForm({
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm font-bold">
             قیمت فروش پایه
-            <input required type="number" min="0" value={design.basePrice} onChange={(e) => setDesign({ ...design, basePrice: e.target.value })} className="mt-2 w-full rounded-xl border border-black/12 bg-white p-3 outline-none focus:border-black" />
+            <input
+              required
+              type="number"
+              min="0"
+              value={design.basePrice}
+              onChange={(e) =>
+                setDesign({ ...design, basePrice: e.target.value })
+              }
+              className="mt-2 w-full rounded-xl border border-black/12 bg-white p-3 outline-none focus:border-black"
+            />
           </label>
           <label className="text-sm font-bold">
             قیمت تمام‌شده پایه
-            <input required type="number" min="0" value={design.baseCost} onChange={(e) => setDesign({ ...design, baseCost: e.target.value })} className="mt-2 w-full rounded-xl border border-black/12 bg-white p-3 outline-none focus:border-black" />
+            <input
+              required
+              type="number"
+              min="0"
+              value={design.baseCost}
+              onChange={(e) =>
+                setDesign({ ...design, baseCost: e.target.value })
+              }
+              className="mt-2 w-full rounded-xl border border-black/12 bg-white p-3 outline-none focus:border-black"
+            />
+            <span className="mt-2 block text-xs font-normal leading-5 text-black/45">
+              هزینه تولید یک تیشرت سفارشی؛ برای محاسبه سود در حسابداری استفاده
+              می‌شود.
+            </span>
           </label>
         </div>
       </div>
