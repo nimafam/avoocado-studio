@@ -65,6 +65,20 @@ function CartDrawer({ onClear }: { onClear: () => void }) {
   const fa = locale === "fa";
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [trackingCodes, setTrackingCodes] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem("avoocado-tracking-codes") ?? "[]",
+      );
+      return Array.isArray(saved)
+        ? saved.filter((code) => typeof code === "string")
+        : [];
+    } catch {
+      return [];
+    }
+  });
+  const [copied, setCopied] = useState(false);
   const total = items.reduce(
     (sum, item) => sum + item.unitPrice * item.quantity,
     0,
@@ -73,6 +87,7 @@ function CartDrawer({ onClear }: { onClear: () => void }) {
     event.preventDefault();
     setBusy(true);
     setMessage("");
+    setCopied(false);
     const fields = new FormData(event.currentTarget);
     const codes: string[] = [];
     try {
@@ -101,9 +116,9 @@ function CartDrawer({ onClear }: { onClear: () => void }) {
         codes.push(data.orderCode);
       }
       onClear();
-      setMessage(
-        `${fa ? "سفارش ثبت شد. کد پیگیری:" : "Order placed. Tracking:"} ${codes.join("، ")}`,
-      );
+      setTrackingCodes(codes);
+      localStorage.setItem("avoocado-tracking-codes", JSON.stringify(codes));
+      setMessage(fa ? "سفارش با موفقیت ثبت شد." : "Order placed successfully.");
     } catch (error) {
       setMessage(
         error instanceof Error
@@ -115,6 +130,10 @@ function CartDrawer({ onClear }: { onClear: () => void }) {
     } finally {
       setBusy(false);
     }
+  }
+  async function copyTrackingCodes() {
+    await navigator.clipboard.writeText(trackingCodes.join("، "));
+    setCopied(true);
   }
   if (!open) return null;
   return (
@@ -222,6 +241,38 @@ function CartDrawer({ onClear }: { onClear: () => void }) {
           <p className="mt-5 rounded-xl bg-white p-4 text-sm leading-6">
             {message}
           </p>
+        ) : null}
+        {trackingCodes.length ? (
+          <section className="mt-4 rounded-2xl border-2 border-black bg-lime-300 p-5">
+            <p className="text-sm font-black">
+              {fa ? "کد پیگیری سفارش" : "Order tracking code"}
+            </p>
+            <div className="mt-3 space-y-2" dir="ltr">
+              {trackingCodes.map((code) => (
+                <strong key={code} className="block text-xl tracking-wider">
+                  {code}
+                </strong>
+              ))}
+            </div>
+            <p className="mt-3 text-xs leading-5">
+              {fa
+                ? "این کد را حتماً ذخیره کنید؛ برای پیگیری سفارش به آن نیاز دارید."
+                : "Please save this code. You will need it to track your order."}
+            </p>
+            <button
+              type="button"
+              onClick={() => void copyTrackingCodes()}
+              className="mt-4 w-full rounded-xl bg-black py-3 text-sm font-bold text-white"
+            >
+              {copied
+                ? fa
+                  ? "کد کپی شد"
+                  : "Code copied"
+                : fa
+                  ? "کپی کد پیگیری"
+                  : "Copy tracking code"}
+            </button>
+          </section>
         ) : null}
       </aside>
     </div>
