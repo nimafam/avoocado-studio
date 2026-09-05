@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { useCart } from "@/components/cart/CartProvider";
+import { getTshirtAsset } from "@/lib/catalog/tshirt-assets";
 
 type Props = {
   designSlug: string;
@@ -57,7 +58,7 @@ async function renderPreview(side: "front" | "back", props: Props) {
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Canvas is not available");
   const shirt = await loadImage(
-    `/models/tshirts/colors/${props.fitId}-fit-${props.colorId}-${side}.webp`,
+    getTshirtAsset(props.fitId, props.colorId, side),
   );
   const scale = Math.min(
     canvas.width / shirt.naturalWidth,

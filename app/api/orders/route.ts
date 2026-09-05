@@ -7,9 +7,6 @@ import { sendOrderToTelegram } from "@/lib/telegram/orders";
 export const dynamic = "force-dynamic";
 
 type OrderPayload = {
-  firstName?: string;
-  lastName?: string;
-  phone?: string;
   designSlug?: string;
   designName?: string;
   collectionSlug?: string;
@@ -23,279 +20,405 @@ type OrderPayload = {
   placementId?: string;
   quantity?: number;
   unitPrice?: number;
-  website?: string;
   variantSku?: string;
+};
+
+type DesignRow = {
+  id: number;
+  name: string;
+  basePrice: number;
+  baseCost: number;
+  editionLimit: number;
+  editionIssued: number;
+  active: number;
+};
+
+type VariantRow = {
+  sku: string;
+  price: number;
+  costPrice: number;
+  stockQuantity: number;
+  materialId: string;
+  sizeId: string;
+  fitId: string;
+  colorId: string;
+};
+
+type ValidItem = {
+  payload: OrderPayload;
+  front: File;
+  back: File;
+  quantity: number;
+  placement: string;
+  design: DesignRow | null;
+  variant: VariantRow | null;
 };
 
 function cleanText(value: unknown, max = 100) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
+function validPreview(value: FormDataEntryValue | null): value is File {
+  return (
+    value instanceof File &&
+    value.type === "image/webp" &&
+    value.size <= 2_000_000
+  );
+}
+
 export async function POST(request: Request) {
   if (!isSameOrigin(request))
     return Response.json({ error: "Invalid origin" }, { status: 403 });
+
   const form = await request.formData().catch(() => null);
   if (!form) return Response.json({ error: "Invalid order." }, { status: 400 });
-  let payload: OrderPayload;
+
+  let customer: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    website?: string;
+  };
+  let itemPayloads: OrderPayload[];
   try {
-    payload = JSON.parse(String(form.get("order") ?? "{}"));
+    customer = JSON.parse(String(form.get("order") ?? "{}"));
+    const rawItems = form.get("items");
+    itemPayloads = rawItems
+      ? JSON.parse(String(rawItems))
+      : [customer as OrderPayload];
   } catch {
     return Response.json({ error: "Invalid order data." }, { status: 400 });
   }
-  if (payload.website)
+
+  if (
+    !Array.isArray(itemPayloads) ||
+    !itemPayloads.length ||
+    itemPayloads.length > 10
+  )
+    return Response.json(
+      { error: "سبد خرید باید بین ۱ تا ۱۰ آیتم داشته باشد." },
+      { status: 400 },
+    );
+
+  if (customer.website)
     return Response.json({ error: "Invalid order." }, { status: 400 });
-  const firstName = cleanText(payload.firstName, 60);
-  const lastName = cleanText(payload.lastName, 80);
-  const phone = cleanText(payload.phone, 20).replace(/[\s()-]/g, "");
-  const front = form.get("front");
-  const back = form.get("back");
-  const quantity = Math.min(20, Math.max(1, Number(payload.quantity) || 1));
-  if (
-    !firstName ||
-    !lastName ||
-    !/^\+?[0-9]{8,15}$/.test(phone) ||
-    !(front instanceof File) ||
-    !(back instanceof File)
-  )
+  const firstName = cleanText(customer.firstName, 60);
+  const lastName = cleanText(customer.lastName, 80);
+  const phone = cleanText(customer.phone, 20).replace(/[\s()-]/g, "");
+  if (!firstName || !lastName || !/^\+?[0-9]{8,15}$/.test(phone))
     return Response.json(
-      { error: "نام، نام خانوادگی، شماره تماس و دو تصویر سفارش الزامی است." },
+      { error: "نام، نام خانوادگی و شماره تماس معتبر الزامی است." },
       { status: 400 },
     );
-  if (
-    front.type !== "image/webp" ||
-    back.type !== "image/webp" ||
-    front.size > 2_000_000 ||
-    back.size > 2_000_000
-  )
-    return Response.json(
-      { error: "تصاویر سفارش معتبر نیستند." },
-      { status: 400 },
-    );
-  const placement = cleanText(payload.placementId, 20);
-  if (!PLACEMENTS.includes(placement as (typeof PLACEMENTS)[number]))
-    return Response.json({ error: "Placement معتبر نیست." }, { status: 400 });
-  const designSlug = cleanText(payload.designSlug, 80);
-  const variantSku = cleanText(payload.variantSku, 100);
-  const design = designSlug
-    ? await env.DB.prepare(
-        "SELECT id, name, base_price AS basePrice, base_cost AS baseCost, edition_limit AS editionLimit, edition_issued AS editionIssued, active FROM designs WHERE slug = ?",
-      )
-        .bind(designSlug)
-        .first<{
-          id: number;
-          name: string;
-          basePrice: number;
-          baseCost: number;
-          editionLimit: number;
-          editionIssued: number;
-          active: number;
-        }>()
-    : null;
-  if (designSlug && (!design || !design.active))
-    return Response.json({ error: "این طرح دیگر فعال نیست." }, { status: 409 });
 
-  const variant =
-    variantSku && design
+  const items: ValidItem[] = [];
+  for (let index = 0; index < itemPayloads.length; index += 1) {
+    const payload = itemPayloads[index] ?? {};
+    const front = form.get(
+      itemPayloads.length === 1 && !form.has("items")
+        ? "front"
+        : `front-${index}`,
+    );
+    const back = form.get(
+      itemPayloads.length === 1 && !form.has("items")
+        ? "back"
+        : `back-${index}`,
+    );
+    if (!validPreview(front) || !validPreview(back))
+      return Response.json(
+        { error: `تصاویر آیتم ${index + 1} معتبر نیستند.` },
+        { status: 400 },
+      );
+
+    const quantity = Math.min(20, Math.max(1, Number(payload.quantity) || 1));
+    const placement = cleanText(payload.placementId, 20);
+    if (!PLACEMENTS.includes(placement as (typeof PLACEMENTS)[number]))
+      return Response.json(
+        { error: `جانمایی آیتم ${index + 1} معتبر نیست.` },
+        { status: 400 },
+      );
+
+    const designSlug = cleanText(payload.designSlug, 80);
+    const variantSku = cleanText(payload.variantSku, 100);
+    const design = designSlug
       ? await env.DB.prepare(
-          `
-        SELECT v.sku, v.price, v.cost_price AS costPrice, v.stock_quantity AS stockQuantity,
-               v.material_id AS materialId, v.size_id AS sizeId,
-               v.fit_id AS fitId, v.color_id AS colorId
-        FROM product_variants v
-        WHERE v.sku = ? AND v.design_id = ? AND v.active = 1
-    `,
+          "SELECT id, name, base_price AS basePrice, base_cost AS baseCost, edition_limit AS editionLimit, edition_issued AS editionIssued, active FROM designs WHERE slug = ?",
         )
-          .bind(variantSku, design.id)
-          .first<{
-            sku: string;
-            price: number;
-            costPrice: number;
-            stockQuantity: number;
-            materialId: string;
-            sizeId: string;
-            fitId: string;
-            colorId: string;
-          }>()
+          .bind(designSlug)
+          .first<DesignRow>()
       : null;
-  if (variantSku && !variant)
-    return Response.json(
-      { error: "این ترکیب محصول دیگر قابل سفارش نیست." },
-      { status: 409 },
-    );
-  if (variant && variant.stockQuantity < quantity)
-    return Response.json(
-      { error: "موجودی این ترکیب برای تعداد انتخاب‌شده کافی نیست." },
-      { status: 409 },
-    );
+    if (designSlug && (!design || !design.active))
+      return Response.json(
+        { error: `طرح آیتم ${index + 1} دیگر فعال نیست.` },
+        { status: 409 },
+      );
 
-  const unitPrice = variant?.price ?? design?.basePrice ?? 0;
-  const unitCost = variant?.costPrice ?? design?.baseCost ?? 0;
-  const materialId = variant?.materialId ?? cleanText(payload.materialId, 40);
-  const sizeId = variant?.sizeId ?? cleanText(payload.sizeId, 10);
-  const fitId = variant?.fitId ?? cleanText(payload.fitId, 20);
-  const colorId = variant?.colorId ?? cleanText(payload.colorId, 30);
+    const variant =
+      variantSku && design
+        ? await env.DB.prepare(
+            `SELECT sku, price, cost_price AS costPrice, stock_quantity AS stockQuantity,
+                    material_id AS materialId, size_id AS sizeId,
+                    fit_id AS fitId, color_id AS colorId
+             FROM product_variants
+             WHERE sku = ? AND design_id = ? AND active = 1`,
+          )
+            .bind(variantSku, design.id)
+            .first<VariantRow>()
+        : null;
+    if (variantSku && !variant)
+      return Response.json(
+        { error: `ترکیب محصول آیتم ${index + 1} دیگر قابل سفارش نیست.` },
+        { status: 409 },
+      );
+    if (variant && variant.stockQuantity < quantity)
+      return Response.json(
+        { error: `موجودی آیتم ${index + 1} کافی نیست.` },
+        { status: 409 },
+      );
+    if (
+      design &&
+      design.editionLimit > 0 &&
+      design.editionIssued + quantity > design.editionLimit
+    )
+      return Response.json(
+        { error: `تیراژ محدود آیتم ${index + 1} کافی نیست.` },
+        { status: 409 },
+      );
 
-  const orderCode = `AV-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 4).toUpperCase()}`;
-  let frontUpload: Awaited<ReturnType<typeof uploadHostedFile>> | null = null;
-  let backUpload: Awaited<ReturnType<typeof uploadHostedFile>> | null = null;
+    items.push({ payload, front, back, quantity, placement, design, variant });
+  }
+
+  const checkoutCode = `AV-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 4).toUpperCase()}`;
+  const uploads: Array<{ front: string; back: string }> = [];
+  const uploadedUrls: string[] = [];
   try {
-    frontUpload = await uploadHostedFile(front, "orders", `${orderCode}-front`);
-    backUpload = await uploadHostedFile(back, "orders", `${orderCode}-back`);
+    for (let index = 0; index < items.length; index += 1) {
+      const front = await uploadHostedFile(
+        items[index].front,
+        "orders",
+        `${checkoutCode}-${index + 1}-front`,
+      );
+      uploadedUrls.push(front.url);
+      const back = await uploadHostedFile(
+        items[index].back,
+        "orders",
+        `${checkoutCode}-${index + 1}-back`,
+      );
+      uploadedUrls.push(back.url);
+      uploads.push({ front: front.url, back: back.url });
+    }
   } catch (error) {
+    await Promise.allSettled(uploadedUrls.map((url) => deleteHostedFile(url)));
     console.error(
       JSON.stringify({
-        event: "order_image_upload_failed",
+        event: "group_order_image_upload_failed",
         message:
           error instanceof Error ? error.message : "Unknown storage error",
       }),
     );
-    if (frontUpload)
-      await deleteHostedFile(frontUpload.url).catch(() => undefined);
     return Response.json(
       { error: "ذخیره تصاویر سفارش انجام نشد." },
       { status: 502 },
     );
   }
-  if (!frontUpload || !backUpload)
-    return Response.json(
-      { error: "ذخیره تصاویر سفارش انجام نشد." },
-      { status: 502 },
+
+  const reservedStock: Array<{ sku: string; quantity: number }> = [];
+  const allocatedEditions: Array<{
+    designId: number;
+    quantity: number;
+    editionEnd: number;
+  }> = [];
+  const prepared: Array<{
+    internalCode: string;
+    item: ValidItem;
+    unitPrice: number;
+    unitCost: number;
+    materialId: string;
+    sizeId: string;
+    fitId: string;
+    colorId: string;
+    editionStart: number | null;
+    editionEnd: number | null;
+    editionLimit: number;
+  }> = [];
+
+  const rollbackReservations = async () => {
+    const statements = reservedStock.map((entry) =>
+      env.DB.prepare(
+        "UPDATE product_variants SET stock_quantity = stock_quantity + ? WHERE sku = ?",
+      ).bind(entry.quantity, entry.sku),
     );
-  if (variant) {
-    const reserved = await env.DB.prepare(
-      "UPDATE product_variants SET stock_quantity = stock_quantity - ? WHERE sku = ? AND active = 1 AND stock_quantity >= ? RETURNING stock_quantity",
-    )
-      .bind(quantity, variant.sku, quantity)
-      .first();
-    if (!reserved) {
-      await Promise.allSettled([
-        deleteHostedFile(frontUpload.url),
-        deleteHostedFile(backUpload.url),
-      ]);
-      return Response.json(
-        {
-          error:
-            "موجودی این محصول همین حالا تغییر کرده است؛ لطفاً دوباره انتخاب کنید.",
-        },
-        { status: 409 },
+    for (const entry of [...allocatedEditions].reverse())
+      statements.push(
+        env.DB.prepare(
+          "UPDATE designs SET edition_issued = edition_issued - ? WHERE id = ? AND edition_issued = ?",
+        ).bind(entry.quantity, entry.designId, entry.editionEnd),
       );
-    }
-  }
-  let editionStart: number | null = null;
-  let editionEnd: number | null = null;
-  const editionLimit = design?.editionLimit ?? 0;
-  if (design && editionLimit > 0) {
-    const allocation = await env.DB.prepare(
-      "UPDATE designs SET edition_issued = edition_issued + ? WHERE id = ? AND edition_issued + ? <= edition_limit RETURNING edition_issued AS editionEnd",
-    )
-      .bind(quantity, design.id, quantity)
-      .first<{ editionEnd: number }>();
-    if (!allocation) {
-      if (variant)
-        await env.DB.prepare(
-          "UPDATE product_variants SET stock_quantity = stock_quantity + ? WHERE sku = ?",
-        )
-          .bind(quantity, variant.sku)
-          .run();
-      await Promise.allSettled([
-        deleteHostedFile(frontUpload.url),
-        deleteHostedFile(backUpload.url),
-      ]);
-      return Response.json(
-        {
-          error:
-            "تیراژ محدود این طرح به پایان رسیده یا برای تعداد انتخاب‌شده کافی نیست.",
-        },
-        { status: 409 },
-      );
-    }
-    editionEnd = allocation.editionEnd;
-    editionStart = editionEnd - quantity + 1;
-  }
-  const snapshot = {
-    ...payload,
-    firstName,
-    lastName,
-    phone,
-    quantity,
-    orderCode,
-    unitPrice,
-    materialId,
-    sizeId,
-    fitId,
-    colorId,
-    orderType: variant ? "ready-made" : "custom",
-    editionStart,
-    editionEnd,
-    editionLimit,
+    if (statements.length)
+      await env.DB.batch(statements).catch(() => undefined);
   };
+
   try {
-    await env.DB.prepare(
-      `INSERT INTO orders (order_code, customer_first_name, customer_last_name, customer_phone, design_id, design_name, collection_slug, material_id, size_id, fit_id, color_id, print_side, placement_id, quantity, unit_price, unit_cost, front_image_key, back_image_key, configuration_json, order_type, variant_sku, total_price, edition_start, edition_end, edition_limit_snapshot) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-      .bind(
-        orderCode,
-        firstName,
-        lastName,
-        phone,
-        design?.id ?? null,
-        design?.name ?? cleanText(payload.designName, 100),
-        cleanText(payload.collectionSlug, 80),
-        materialId,
-        sizeId,
-        fitId,
-        colorId,
-        payload.printSide === "back" ? "back" : "front",
-        placement,
-        quantity,
-        unitPrice,
-        unitCost,
-        frontUpload.url,
-        backUpload.url,
-        JSON.stringify(snapshot),
-        variant ? "ready-made" : "custom",
-        variant?.sku ?? null,
-        unitPrice * quantity,
+    for (let index = 0; index < items.length; index += 1) {
+      const item = items[index];
+      if (item.variant) {
+        const reserved = await env.DB.prepare(
+          "UPDATE product_variants SET stock_quantity = stock_quantity - ? WHERE sku = ? AND active = 1 AND stock_quantity >= ? RETURNING stock_quantity",
+        )
+          .bind(item.quantity, item.variant.sku, item.quantity)
+          .first();
+        if (!reserved) throw new Error("stock_changed");
+        reservedStock.push({ sku: item.variant.sku, quantity: item.quantity });
+      }
+
+      let editionStart: number | null = null;
+      let editionEnd: number | null = null;
+      const editionLimit = item.design?.editionLimit ?? 0;
+      if (item.design && editionLimit > 0) {
+        const allocation = await env.DB.prepare(
+          "UPDATE designs SET edition_issued = edition_issued + ? WHERE id = ? AND edition_issued + ? <= edition_limit RETURNING edition_issued AS editionEnd",
+        )
+          .bind(item.quantity, item.design.id, item.quantity)
+          .first<{ editionEnd: number }>();
+        if (!allocation) throw new Error("edition_changed");
+        editionEnd = allocation.editionEnd;
+        editionStart = editionEnd - item.quantity + 1;
+        allocatedEditions.push({
+          designId: item.design.id,
+          quantity: item.quantity,
+          editionEnd,
+        });
+      }
+
+      prepared.push({
+        internalCode: `${checkoutCode}-${String(index + 1).padStart(2, "0")}`,
+        item,
+        unitPrice: item.variant?.price ?? item.design?.basePrice ?? 0,
+        unitCost: item.variant?.costPrice ?? item.design?.baseCost ?? 0,
+        materialId:
+          item.variant?.materialId ?? cleanText(item.payload.materialId, 40),
+        sizeId: item.variant?.sizeId ?? cleanText(item.payload.sizeId, 10),
+        fitId: item.variant?.fitId ?? cleanText(item.payload.fitId, 20),
+        colorId: item.variant?.colorId ?? cleanText(item.payload.colorId, 30),
         editionStart,
         editionEnd,
-        editionLimit || null,
-      )
-      .run();
+        editionLimit,
+      });
+    }
+  } catch (error) {
+    await rollbackReservations();
+    await Promise.allSettled(uploadedUrls.map((url) => deleteHostedFile(url)));
+    return Response.json(
+      {
+        error:
+          error instanceof Error && error.message === "edition_changed"
+            ? "تیراژ یکی از طرح‌ها همین حالا تغییر کرده است؛ لطفاً دوباره بررسی کنید."
+            : "موجودی یکی از محصولات همین حالا تغییر کرده است؛ لطفاً دوباره بررسی کنید.",
+      },
+      { status: 409 },
+    );
+  }
+
+  try {
+    await env.DB.batch(
+      prepared.map((entry, index) => {
+        const { item } = entry;
+        const snapshot = {
+          ...item.payload,
+          firstName,
+          lastName,
+          phone,
+          quantity: item.quantity,
+          orderCode: checkoutCode,
+          itemCode: entry.internalCode,
+          unitPrice: entry.unitPrice,
+          materialId: entry.materialId,
+          sizeId: entry.sizeId,
+          fitId: entry.fitId,
+          colorId: entry.colorId,
+          orderType: item.variant ? "ready-made" : "custom",
+          editionStart: entry.editionStart,
+          editionEnd: entry.editionEnd,
+          editionLimit: entry.editionLimit,
+        };
+        return env.DB.prepare(
+          `INSERT INTO orders (
+             order_code, checkout_code, customer_first_name, customer_last_name,
+             customer_phone, design_id, design_name, collection_slug, material_id,
+             size_id, fit_id, color_id, print_side, placement_id, quantity,
+             unit_price, unit_cost, front_image_key, back_image_key,
+             configuration_json, order_type, variant_sku, total_price,
+             edition_start, edition_end, edition_limit_snapshot
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ).bind(
+          entry.internalCode,
+          checkoutCode,
+          firstName,
+          lastName,
+          phone,
+          item.design?.id ?? null,
+          item.design?.name ?? cleanText(item.payload.designName, 100),
+          cleanText(item.payload.collectionSlug, 80),
+          entry.materialId,
+          entry.sizeId,
+          entry.fitId,
+          entry.colorId,
+          item.payload.printSide === "back" ? "back" : "front",
+          item.placement,
+          item.quantity,
+          entry.unitPrice,
+          entry.unitCost,
+          uploads[index].front,
+          uploads[index].back,
+          JSON.stringify(snapshot),
+          item.variant ? "ready-made" : "custom",
+          item.variant?.sku ?? null,
+          entry.unitPrice * item.quantity,
+          entry.editionStart,
+          entry.editionEnd,
+          entry.editionLimit || null,
+        );
+      }),
+    );
   } catch {
-    if (variant)
-      await env.DB.prepare(
-        "UPDATE product_variants SET stock_quantity = stock_quantity + ? WHERE sku = ?",
-      )
-        .bind(quantity, variant.sku)
-        .run()
-        .catch(() => undefined);
-    await Promise.allSettled([
-      deleteHostedFile(frontUpload.url),
-      deleteHostedFile(backUpload.url),
-    ]);
+    await rollbackReservations();
+    await Promise.allSettled(uploadedUrls.map((url) => deleteHostedFile(url)));
     return Response.json({ error: "ثبت سفارش انجام نشد." }, { status: 500 });
   }
+
   const telegram = await sendOrderToTelegram({
-    orderCode,
+    orderCode: checkoutCode,
     customer: `${firstName} ${lastName}`,
     phone,
-    designName: design?.name ?? cleanText(payload.designName, 100),
-    quantity,
-    totalPrice: unitPrice * quantity,
-    variantSku: variant?.sku,
-    frontUrl: frontUpload.url,
-    backUrl: backUpload.url,
-    editionStart,
-    editionEnd,
-    editionLimit,
+    totalPrice: prepared.reduce(
+      (sum, entry) => sum + entry.unitPrice * entry.item.quantity,
+      0,
+    ),
+    items: prepared.map((entry, index) => ({
+      designName:
+        entry.item.design?.name ??
+        cleanText(entry.item.payload.designName, 100),
+      quantity: entry.item.quantity,
+      variantSku: entry.item.variant?.sku,
+      frontUrl: uploads[index].front,
+      backUrl: uploads[index].back,
+      editionStart: entry.editionStart,
+      editionEnd: entry.editionEnd,
+      editionLimit: entry.editionLimit,
+    })),
   });
   await env.DB.prepare(
-    "UPDATE orders SET telegram_status = ?, telegram_error = ? WHERE order_code = ?",
+    "UPDATE orders SET telegram_status = ?, telegram_error = ? WHERE checkout_code = ?",
   )
-    .bind(telegram.status, telegram.error, orderCode)
+    .bind(telegram.status, telegram.error, checkoutCode)
     .run();
+
   return Response.json(
-    { orderCode, telegramStatus: telegram.status },
+    {
+      orderCode: checkoutCode,
+      itemCount: prepared.length,
+      telegramStatus: telegram.status,
+    },
     { status: 201 },
   );
 }

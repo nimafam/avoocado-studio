@@ -11,6 +11,7 @@ import {
 } from "@/data/catalog/shirt-options";
 import { OrderCheckout } from "@/components/customizer/OrderCheckout";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { getTshirtAsset } from "@/lib/catalog/tshirt-assets";
 
 type Side = "front" | "back";
 type Fit = "loose" | "boxy";
@@ -176,7 +177,7 @@ export function TShirtImageCustomizer() {
   );
   const activePlacement =
     placements.find(([id]) => id === placement) ?? placements[2];
-  const source = `/models/tshirts/colors/${fit}-fit-${colors[color][3]}-${viewSide}.webp`;
+  const source = getTshirtAsset(fit, colors[color][3], viewSide);
 
   function selectCollection(slug: string) {
     setCollection(slug);

@@ -8,6 +8,7 @@ import type {
   PublicProduct,
   PublicVariant,
 } from "@/lib/catalog/cloudflare-repository";
+import { getTshirtAsset } from "@/lib/catalog/tshirt-assets";
 
 type Dimension = "fitId" | "materialId" | "sizeId" | "colorId";
 type Placement = "left" | "right" | "center" | "large" | "lower" | "upper";
@@ -158,7 +159,7 @@ export function ReadyMadeProductConfigurator({
       </p>
     );
   const fit = selected.fitId === "boxy" ? "boxy" : "loose";
-  const shirtSource = `/models/tshirts/colors/${fit}-fit-${selected.colorId}-${side}.webp`;
+  const shirtSource = getTshirtAsset(fit, selected.colorId, side);
   const artworkSource = product.artworkKey?.startsWith(
     "https://storage.avoocadostudio.com/uploads/",
   )

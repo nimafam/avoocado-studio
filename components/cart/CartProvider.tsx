@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, FormEvent, useContext, useMemo, useState } from "react";
+import {
+  createContext,
+  FormEvent,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 
 export type CartItem = {
@@ -79,42 +86,53 @@ function CartDrawer({ onClear }: { onClear: () => void }) {
     }
   });
   const [copied, setCopied] = useState(false);
+  const submitting = useRef(false);
   const total = items.reduce(
     (sum, item) => sum + item.unitPrice * item.quantity,
     0,
   );
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting.current || !items.length) return;
+    submitting.current = true;
     setBusy(true);
     setMessage("");
     setCopied(false);
     const fields = new FormData(event.currentTarget);
-    const codes: string[] = [];
     try {
-      for (const item of items) {
-        const payload = {
-          ...item.payload,
+      const form = new FormData();
+      form.set(
+        "order",
+        JSON.stringify({
           firstName: fields.get("firstName"),
           lastName: fields.get("lastName"),
           phone: fields.get("phone"),
           website: fields.get("website"),
-        };
-        const form = new FormData();
-        form.set("order", JSON.stringify(payload));
-        form.set("front", item.front, "front.webp");
-        form.set("back", item.back, "back.webp");
-        const response = await fetch("/api/orders", {
-          method: "POST",
-          body: form,
-        });
-        const data = await response.json();
-        if (!response.ok)
-          throw new Error(
-            data.error ||
-              (fa ? "ثبت سفارش انجام نشد." : "Order could not be placed."),
-          );
-        codes.push(data.orderCode);
-      }
+        }),
+      );
+      form.set("items", JSON.stringify(items.map((item) => item.payload)));
+      items.forEach((item, index) => {
+        form.set(`front-${index}`, item.front, `front-${index}.webp`);
+        form.set(`back-${index}`, item.back, `back-${index}.webp`);
+      });
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        body: form,
+      });
+      const data = (await response.json()) as {
+        error?: string;
+        orderCode?: string;
+      };
+      if (!response.ok)
+        throw new Error(
+          data.error ||
+            (fa ? "ثبت سفارش انجام نشد." : "Order could not be placed."),
+        );
+      if (!data.orderCode)
+        throw new Error(
+          fa ? "کد پیگیری دریافت نشد." : "No tracking code received.",
+        );
+      const codes = [data.orderCode];
       onClear();
       setTrackingCodes(codes);
       localStorage.setItem("avoocado-tracking-codes", JSON.stringify(codes));
@@ -128,6 +146,7 @@ function CartDrawer({ onClear }: { onClear: () => void }) {
             : "Order could not be placed.",
       );
     } finally {
+      submitting.current = false;
       setBusy(false);
     }
   }

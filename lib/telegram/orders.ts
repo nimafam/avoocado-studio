@@ -5,19 +5,23 @@ type TelegramEnv = {
   TELEGRAM_ADMIN_CHAT_IDS?: string;
 };
 
-export async function sendOrderToTelegram(order: {
-  orderCode: string;
-  customer: string;
-  phone: string;
+type TelegramOrderItem = {
   designName: string;
   quantity: number;
-  totalPrice: number;
   variantSku?: string | null;
   frontUrl: string;
   backUrl: string;
   editionStart?: number | null;
   editionEnd?: number | null;
   editionLimit?: number | null;
+};
+
+export async function sendOrderToTelegram(order: {
+  orderCode: string;
+  customer: string;
+  phone: string;
+  totalPrice: number;
+  items: TelegramOrderItem[];
 }) {
   const runtime = env as unknown as TelegramEnv;
   const token = runtime.TELEGRAM_BOT_TOKEN;
@@ -27,22 +31,29 @@ export async function sendOrderToTelegram(order: {
     .filter(Boolean);
   if (!token || !chatIds.length)
     return { status: "not_configured" as const, error: null };
+
+  const itemLines = order.items.flatMap((item, index) => [
+    `${index + 1}) ${item.designName} — تعداد ${item.quantity}`,
+    item.variantSku ? `SKU: ${item.variantSku}` : null,
+    item.editionStart && item.editionLimit
+      ? `نسخه محدود: ${String(item.editionStart).padStart(3, "0")}${item.editionEnd !== item.editionStart ? ` تا ${String(item.editionEnd).padStart(3, "0")}` : ""} از ${item.editionLimit}`
+      : null,
+    `جلو: ${item.frontUrl}`,
+    `پشت: ${item.backUrl}`,
+    "",
+  ]);
   const text = [
     `🛍 سفارش جدید ${order.orderCode}`,
     `مشتری: ${order.customer}`,
     `تلفن: ${order.phone}`,
-    `محصول: ${order.designName}`,
-    order.variantSku ? `SKU: ${order.variantSku}` : null,
-    `تعداد: ${order.quantity}`,
-    order.editionStart && order.editionLimit
-      ? `نسخه محدود: ${String(order.editionStart).padStart(3, "0")}${order.editionEnd !== order.editionStart ? ` تا ${String(order.editionEnd).padStart(3, "0")}` : ""} از ${order.editionLimit}`
-      : null,
-    `مبلغ: ${order.totalPrice.toLocaleString("fa-IR")} تومان`,
-    `نمای جلو: ${order.frontUrl}`,
-    `نمای پشت: ${order.backUrl}`,
+    `تعداد آیتم‌ها: ${order.items.length}`,
+    "",
+    ...itemLines,
+    `مبلغ کل: ${order.totalPrice.toLocaleString("fa-IR")} تومان`,
   ]
-    .filter(Boolean)
+    .filter((line): line is string => line !== null)
     .join("\n");
+
   try {
     const results = await Promise.all(
       chatIds.map((chat_id) =>
@@ -52,7 +63,7 @@ export async function sendOrderToTelegram(order: {
           body: JSON.stringify({
             chat_id,
             text,
-            disable_web_page_preview: false,
+            disable_web_page_preview: true,
           }),
         }),
       ),

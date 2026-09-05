@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 export type AdminOrder = {
   id: number;
   orderCode: string;
+  checkoutCode: string;
   firstName: string;
   lastName: string;
   phone: string;
@@ -131,6 +132,23 @@ export function OrdersManager() {
       ),
     [orders],
   );
+  const orderGroups = useMemo(() => {
+    const groups = new Map<string, AdminOrder[]>();
+    for (const order of orders) {
+      const current = groups.get(order.checkoutCode) ?? [];
+      current.push(order);
+      groups.set(order.checkoutCode, current);
+    }
+    return groups;
+  }, [orders]);
+  const itemPositions = useMemo(() => {
+    const positions = new Map<number, { index: number; total: number }>();
+    for (const group of orderGroups.values())
+      group.forEach((order, index) =>
+        positions.set(order.id, { index: index + 1, total: group.length }),
+      );
+    return positions;
+  }, [orderGroups]);
 
   if (unauthorized)
     return (
@@ -201,7 +219,8 @@ export function OrdersManager() {
               <h2 className="mt-1 text-2xl font-black">لیست سفارش‌ها</h2>
             </div>
             <span className="text-sm text-black/45">
-              {orders.length.toLocaleString("fa-IR")} سفارش
+              {orderGroups.size.toLocaleString("fa-IR")} سفارش ·{" "}
+              {orders.length.toLocaleString("fa-IR")} آیتم
             </span>
           </div>
           <div className="mt-5 space-y-4">
@@ -217,6 +236,7 @@ export function OrdersManager() {
                 );
                 const cost = order.unitCost * order.quantity;
                 const profit = revenue - cost;
+                const position = itemPositions.get(order.id);
                 return (
                   <article
                     key={order.id}
@@ -244,7 +264,7 @@ export function OrdersManager() {
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="text-xl font-black" dir="ltr">
-                            {order.orderCode}
+                            {order.checkoutCode}
                           </h3>
                           <Badge>
                             {orderLabels[order.status] ?? order.status}
@@ -258,6 +278,12 @@ export function OrdersManager() {
                               ? "آماده"
                               : "سفارشی"}
                           </Badge>
+                          {position && position.total > 1 ? (
+                            <Badge>
+                              آیتم {position.index.toLocaleString("fa-IR")} از{" "}
+                              {position.total.toLocaleString("fa-IR")}
+                            </Badge>
+                          ) : null}
                         </div>
                         <p className="mt-4 font-bold">
                           {order.firstName} {order.lastName} ·{" "}
@@ -320,7 +346,7 @@ export function OrdersManager() {
                     </div>
                     <div className="flex flex-wrap gap-3 border-t border-black/8 bg-[#fafaf8] px-5 py-4">
                       <label className="text-xs font-bold text-black/45">
-                        وضعیت سفارش
+                        وضعیت کل سفارش
                         <select
                           disabled={busyId === order.id}
                           value={order.status}
@@ -337,7 +363,7 @@ export function OrdersManager() {
                         </select>
                       </label>
                       <label className="text-xs font-bold text-black/45">
-                        وضعیت پرداخت
+                        وضعیت پرداخت کل سفارش
                         <select
                           disabled={busyId === order.id}
                           value={order.paymentStatus}

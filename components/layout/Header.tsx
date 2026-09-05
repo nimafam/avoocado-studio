@@ -68,12 +68,25 @@ export function Header() {
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="relative text-sm font-medium"
+            className="relative grid size-10 cursor-pointer place-items-center rounded-full transition hover:bg-black/5"
+            aria-label={
+              locale === "fa" ? "باز کردن بگ خرید" : "Open shopping bag"
+            }
           >
-            {locale === "fa" ? "بگ خرید" : "Bag"}
+            <svg
+              viewBox="0 0 24 24"
+              className="size-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              aria-hidden="true"
+            >
+              <path d="M5.5 8.5h13l1 12h-15l1-12Z" />
+              <path d="M9 9V6.5a3 3 0 0 1 6 0V9" />
+            </svg>
             {items.length ? (
-              <span className="absolute -left-3 -top-3 grid size-5 place-items-center rounded-full bg-black text-[10px] text-white">
-                {items.length}
+              <span className="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-black px-1 text-[10px] leading-5 text-white">
+                {items.reduce((sum, item) => sum + item.quantity, 0)}
               </span>
             ) : null}
           </button>
