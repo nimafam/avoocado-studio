@@ -20,12 +20,12 @@ const validPlacements: Placement[] = [
   "upper",
 ];
 const placementClasses: Record<Placement, string> = {
-  left: "left-[37%] top-[34%] h-[18%] w-[9%]",
-  right: "right-[37%] top-[34%] h-[18%] w-[9%]",
-  center: "left-1/2 top-[39%] h-[34%] w-[17%] -translate-x-1/2",
-  large: "left-1/2 top-[25%] h-[58%] w-[34%] -translate-x-1/2",
-  lower: "left-1/2 top-[55%] h-[28%] w-[14%] -translate-x-1/2",
-  upper: "left-1/2 top-[29%] h-[28%] w-[14%] -translate-x-1/2",
+  left: "left-[34%] top-[31%] h-[27%] w-[14%]",
+  right: "right-[34%] top-[31%] h-[27%] w-[14%]",
+  center: "left-1/2 top-[27%] h-[56%] w-[34%] -translate-x-1/2",
+  large: "left-1/2 top-[23%] h-[64%] w-[42%] -translate-x-1/2",
+  lower: "left-1/2 top-[50%] h-[35%] w-[28%] -translate-x-1/2",
+  upper: "left-1/2 top-[27%] h-[35%] w-[28%] -translate-x-1/2",
 };
 
 function uniqueOptions<T>(
@@ -183,7 +183,7 @@ export function ReadyMadeProductConfigurator({
               <img
                 src={artworkSource}
                 alt=""
-                className="block h-full w-full object-contain object-top"
+                className="block h-auto max-h-full w-full object-contain object-top"
               />
             </div>
           ) : null}
@@ -214,6 +214,29 @@ export function ReadyMadeProductConfigurator({
             {product.description}
           </p>
         )}
+        {product.editionLimit > 0 ? (
+          <div className="mt-6 rounded-2xl border border-black/10 bg-lime-300 p-5">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <small className="block text-[10px] font-bold uppercase tracking-[.18em] text-black/55">
+                  {fa ? "نسخه محدود و شماره‌دار" : "Numbered limited edition"}
+                </small>
+                <strong className="mt-2 block text-xl">
+                  {fa ? "نسخه بعدی" : "Next edition"}
+                </strong>
+              </div>
+              <strong className="text-2xl font-black" dir="ltr">
+                {String(product.editionIssued + 1).padStart(3, "0")} /{" "}
+                {product.editionLimit}
+              </strong>
+            </div>
+            <p className="mt-3 border-t border-black/15 pt-3 text-xs text-black/60">
+              {fa
+                ? `${Math.max(product.editionLimit - product.editionIssued, 0).toLocaleString("fa-IR")} نسخه باقی مانده؛ شماره قطعی هنگام ثبت سفارش اختصاص می‌یابد و شناسنامه از پنل سفارش‌ها صادر می‌شود.`
+                : `${Math.max(product.editionLimit - product.editionIssued, 0).toLocaleString("en-US")} editions remain. The final number is assigned when the order is placed and its certificate is issued from Orders.`}
+            </p>
+          </div>
+        ) : null}
         {artworkSource ? (
           <button
             type="button"

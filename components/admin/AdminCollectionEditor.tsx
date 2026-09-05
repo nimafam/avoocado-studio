@@ -733,6 +733,20 @@ export function AdminCollectionEditor({ collectionId }: Props) {
                     <p className="mt-2 text-xs text-black/40">
                       {item.basePrice.toLocaleString("fa-IR")} تومان · ویرایش ←
                     </p>
+                    {item.editionLimit > 0 ? (
+                      <p
+                        className="mt-3 inline-flex rounded-full bg-lime-300 px-3 py-1.5 text-xs font-black"
+                        dir="ltr"
+                      >
+                        EDITION{" "}
+                        {String(item.editionIssued + 1).padStart(3, "0")} /{" "}
+                        {item.editionLimit}
+                      </p>
+                    ) : (
+                      <p className="mt-3 text-xs text-black/35">
+                        بدون شناسنامه نسخه محدود
+                      </p>
+                    )}
                   </div>
                 </button>
               ))}
@@ -1113,6 +1127,13 @@ function DesignForm({
               می‌شود.
             </span>
           </label>
+        </div>
+        <div className="mt-5 rounded-2xl border border-black/10 bg-lime-50 p-4 md:col-span-2">
+          <h3 className="font-black">شناسنامه و شماره‌گذاری نسخه محدود</h3>
+          <p className="mt-1 text-xs leading-6 text-black/50">
+            با تعیین تیراژ، هر سفارش یک شماره غیرتکراری می‌گیرد و دکمه ساخت
+            شناسنامه در صفحه سفارش‌ها فعال می‌شود.
+          </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 md:col-span-2">
           <label className="text-sm font-bold">

@@ -36,6 +36,8 @@ export type PublicProduct = PublicDesign & {
   collectionNameFa: string;
   price: number;
   variantCount: number;
+  editionLimit: number;
+  editionIssued: number;
 };
 
 export type PublicVariant = {
@@ -60,6 +62,7 @@ export async function getPublicProducts() {
   const result = await env.DB.prepare(
     `
         SELECT d.id, d.slug, d.name, d.description, d.base_price AS basePrice,
+               d.edition_limit AS editionLimit, d.edition_issued AS editionIssued,
                d.artwork_key AS artworkKey, c.slug AS collectionSlug,
                c.name_en AS collectionName, c.name_fa AS collectionNameFa,
                GROUP_CONCAT(DISTINCT dp.placement_id) AS placements,
@@ -83,6 +86,7 @@ export async function getPublicProduct(slug: string) {
   const product = await env.DB.prepare(
     `
         SELECT d.id, d.slug, d.name, d.description, d.base_price AS basePrice,
+               d.edition_limit AS editionLimit, d.edition_issued AS editionIssued,
                d.artwork_key AS artworkKey, c.slug AS collectionSlug,
                c.name_en AS collectionName, c.name_fa AS collectionNameFa,
                GROUP_CONCAT(DISTINCT dp.placement_id) AS placements,
