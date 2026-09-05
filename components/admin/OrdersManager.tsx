@@ -141,7 +141,7 @@ export function OrdersManager() {
         <div className="rounded-3xl bg-white p-8 text-center">
           <h1 className="text-2xl font-black">ابتدا وارد شوید</h1>
           <Link
-            href="/admin"
+            href="/admin/login"
             className="mt-5 inline-block rounded-full bg-black px-6 py-3 !text-white"
           >
             ورود مدیر
@@ -169,7 +169,7 @@ export function OrdersManager() {
               به‌روزرسانی
             </button>
             <Link
-              href="/admin"
+              href="/admin/dashboard"
               className="rounded-full bg-black px-5 py-2.5 text-sm font-bold !text-white transition hover:bg-lime-300 hover:!text-black"
             >
               کاتالوگ

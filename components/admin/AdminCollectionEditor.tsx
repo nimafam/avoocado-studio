@@ -467,7 +467,7 @@ export function AdminCollectionEditor({ collectionId }: Props) {
       );
       setCatalog(data);
       setMessage("مورد انتخاب‌شده حذف شد.");
-      if (entity === "collection") router.replace("/admin");
+      if (entity === "collection") router.replace("/admin/dashboard");
       if (entity === "design") setEditingDesign(null);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "حذف انجام نشد.");
@@ -485,7 +485,7 @@ export function AdminCollectionEditor({ collectionId }: Props) {
         <div className="rounded-3xl bg-white p-8 text-center">
           <h1 className="text-2xl font-black">نشست شما پایان یافته</h1>
           <Link
-            href="/admin"
+            href="/admin/login"
             className="mt-5 inline-block rounded-full bg-black px-6 py-3 text-white"
           >
             ورود دوباره
@@ -507,7 +507,7 @@ export function AdminCollectionEditor({ collectionId }: Props) {
       >
         <div className="text-center">
           <h1 className="text-3xl font-black">کالکشن پیدا نشد</h1>
-          <Link href="/admin" className="mt-5 inline-block underline">
+          <Link href="/admin/dashboard" className="mt-5 inline-block underline">
             بازگشت
           </Link>
         </div>
@@ -533,7 +533,10 @@ export function AdminCollectionEditor({ collectionId }: Props) {
       <header className="border-b border-black/8 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-6 md:px-10">
           <div>
-            <Link href="/admin" className="text-xs font-bold text-[#668000]">
+            <Link
+              href="/admin/dashboard"
+              className="text-xs font-bold text-[#668000]"
+            >
               ← بازگشت به کالکشن‌ها
             </Link>
             <h1 className="mt-2 text-3xl font-black">
