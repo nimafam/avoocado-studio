@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { OrderCheckout } from "@/components/customizer/OrderCheckout";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import type {
@@ -77,6 +77,23 @@ export function ReadyMadeProductConfigurator({
     variants.find((variant) => variant.stockQuantity > 0) ?? variants[0];
   const [selected, setSelected] = useState(firstAvailable);
   const [side, setSide] = useState<"front" | "back">("front");
+  const [artworkOpen, setArtworkOpen] = useState(false);
+
+  useEffect(() => {
+    if (!artworkOpen) return;
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setArtworkOpen(false);
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [artworkOpen]);
   const placements =
     product.placements
       ?.split(",")
@@ -198,17 +215,28 @@ export function ReadyMadeProductConfigurator({
           </p>
         )}
         {artworkSource ? (
-          <a
-            href={artworkSource}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-7 flex items-center gap-4 rounded-2xl border border-black/10 bg-[#f6f5f1] p-3 transition hover:border-black/30"
+          <button
+            type="button"
+            onClick={() => setArtworkOpen(true)}
+            className="mt-7 flex w-full cursor-pointer items-center gap-4 rounded-2xl border border-black/10 bg-[#f6f5f1] p-3 text-start transition hover:border-black/30"
           >
-            <span className="grid h-32 w-28 shrink-0 place-items-center overflow-hidden rounded-xl bg-white p-2">
+            <span
+              className="relative grid h-32 w-28 shrink-0 select-none place-items-center overflow-hidden rounded-xl bg-white p-2"
+              onContextMenu={(event) => event.preventDefault()}
+            >
               <img
                 src={artworkSource}
                 alt={product.name}
+                draggable={false}
                 className="block h-full w-full object-contain"
+              />
+              <Image
+                src="/brand/avoocado-logo.svg"
+                alt=""
+                width={96}
+                height={36}
+                draggable={false}
+                className="pointer-events-none absolute left-1/2 top-1/2 w-[72%] -translate-x-1/2 -translate-y-1/2 opacity-30"
               />
             </span>
             <span>
@@ -216,10 +244,10 @@ export function ReadyMadeProductConfigurator({
                 {fa ? "طرح اصلی" : "Original artwork"}
               </small>
               <strong className="mt-2 block text-sm">
-                {fa ? "مشاهده کامل طرح" : "View full artwork"} ↗
+                {fa ? "مشاهده طرح" : "View artwork"} +
               </strong>
             </span>
-          </a>
+          </button>
         ) : null}
         <div className="mt-8 space-y-6">
           <fieldset>
@@ -333,6 +361,60 @@ export function ReadyMadeProductConfigurator({
           )}
         </div>
       </div>
+      {artworkOpen && artworkSource ? (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm sm:p-8"
+          role="dialog"
+          aria-modal="true"
+          aria-label={fa ? "پیش‌نمایش طرح" : "Artwork preview"}
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setArtworkOpen(false);
+          }}
+        >
+          <div className="relative flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-[#171714] shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/15 px-4 py-3 text-white sm:px-6">
+              <div>
+                <small className="block text-[10px] uppercase tracking-[.18em] text-white/50">
+                  AVOOCADO STUDIO
+                </small>
+                <strong className="mt-1 block text-sm">{product.name}</strong>
+              </div>
+              <button
+                type="button"
+                onClick={() => setArtworkOpen(false)}
+                className="grid size-10 cursor-pointer place-items-center rounded-full border border-white/20 text-xl leading-none transition hover:bg-white hover:text-black"
+                aria-label={fa ? "بستن" : "Close"}
+              >
+                ×
+              </button>
+            </div>
+            <div
+              className="relative flex min-h-0 flex-1 select-none items-center justify-center overflow-hidden p-4 sm:p-8"
+              onContextMenu={(event) => event.preventDefault()}
+            >
+              <img
+                src={artworkSource}
+                alt={product.name}
+                draggable={false}
+                className="block max-h-[72vh] max-w-full object-contain"
+              />
+              <div className="pointer-events-none absolute inset-0 grid place-items-center overflow-hidden">
+                <Image
+                  src="/brand/avoocado-logo.svg"
+                  alt=""
+                  width={320}
+                  height={120}
+                  draggable={false}
+                  className="w-[38%] min-w-40 max-w-80 opacity-30 brightness-0 invert"
+                />
+              </div>
+              <div className="pointer-events-none absolute inset-x-0 bottom-4 text-center text-[10px] uppercase tracking-[.28em] text-white/45">
+                AVOOCADO STUDIO · PREVIEW
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
