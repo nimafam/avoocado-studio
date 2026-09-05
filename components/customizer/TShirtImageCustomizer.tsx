@@ -49,12 +49,24 @@ const fallbackArtworks: CustomizerArtwork[] = products.map((product) => ({
 }));
 
 const placements = [
-  ["left", "Left", "left-[37%] top-[34%] w-[9%]"],
-  ["right", "Right", "right-[37%] top-[34%] w-[9%]"],
-  ["center", "Center", "left-1/2 top-[39%] w-[17%] -translate-x-1/2"],
-  ["large", "Large center", "left-1/2 top-[26%] w-[34%] -translate-x-1/2"],
-  ["lower", "Lower center", "left-1/2 top-[55%] w-[14%] -translate-x-1/2"],
-  ["upper", "Upper center", "left-1/2 top-[29%] w-[14%] -translate-x-1/2"],
+  ["left", "Left", "left-[37%] top-[34%] h-[18%] w-[9%]"],
+  ["right", "Right", "right-[37%] top-[34%] h-[18%] w-[9%]"],
+  ["center", "Center", "left-1/2 top-[39%] h-[34%] w-[17%] -translate-x-1/2"],
+  [
+    "large",
+    "Large center",
+    "left-1/2 top-[25%] h-[58%] w-[34%] -translate-x-1/2",
+  ],
+  [
+    "lower",
+    "Lower center",
+    "left-1/2 top-[55%] h-[28%] w-[14%] -translate-x-1/2",
+  ],
+  [
+    "upper",
+    "Upper center",
+    "left-1/2 top-[29%] h-[28%] w-[14%] -translate-x-1/2",
+  ],
 ] as const;
 
 function Option({
@@ -202,7 +214,7 @@ export function TShirtImageCustomizer() {
                 <img
                   src={selectedArtwork.artworkUrl}
                   alt=""
-                  className="block h-auto w-full object-contain"
+                  className="block h-full w-full object-contain object-top"
                 />
               ) : (
                 <div

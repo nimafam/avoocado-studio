@@ -40,12 +40,12 @@ function loadImage(source: string) {
 
 function placementBox(id: Props["placementId"]) {
   const boxes = {
-    left: [370, 425, 90],
-    right: [540, 425, 90],
-    center: [415, 488, 170],
-    large: [330, 325, 340],
-    lower: [430, 688, 140],
-    upper: [430, 363, 140],
+    left: [370, 425, 90, 225],
+    right: [540, 425, 90, 225],
+    center: [415, 488, 170, 425],
+    large: [330, 313, 340, 725],
+    lower: [430, 688, 140, 350],
+    upper: [430, 363, 140, 350],
   } as const;
   return boxes[id];
 }
@@ -73,13 +73,22 @@ async function renderPreview(side: "front" | "back", props: Props) {
     height,
   );
   if (side === props.printSide) {
-    const [x, y, size] = placementBox(props.placementId);
+    const [x, y, size, maxHeight] = placementBox(props.placementId);
     if (props.artworkUrl) {
       const artwork = await loadImage(props.artworkUrl);
-      const artScale = size / artwork.naturalWidth;
-      const artWidth = size;
+      const artScale = Math.min(
+        size / artwork.naturalWidth,
+        maxHeight / artwork.naturalHeight,
+      );
+      const artWidth = artwork.naturalWidth * artScale;
       const artHeight = artwork.naturalHeight * artScale;
-      context.drawImage(artwork, x, y, artWidth, artHeight);
+      context.drawImage(
+        artwork,
+        x + (size - artWidth) / 2,
+        y,
+        artWidth,
+        artHeight,
+      );
     } else {
       context.fillStyle = props.artworkTone ?? "#d7ff46";
       context.beginPath();
