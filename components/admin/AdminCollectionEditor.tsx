@@ -21,6 +21,8 @@ type DesignDraft = {
   description: string;
   basePrice: string;
   baseCost: string;
+  editionLimit: string;
+  editionIssued: string;
   artworkKey: string;
   placements: string[];
   active: boolean;
@@ -44,6 +46,8 @@ const emptyDesign: DesignDraft = {
   description: "",
   basePrice: "0",
   baseCost: "0",
+  editionLimit: "0",
+  editionIssued: "0",
   artworkKey: "",
   placements: ["center"],
   active: true,
@@ -81,6 +85,7 @@ export function AdminCollectionEditor({ collectionId }: Props) {
     nameFa: "",
     nameEn: "",
     slug: "",
+    description: "",
     active: true,
   });
   const [collectionSlugTouched, setCollectionSlugTouched] = useState(false);
@@ -105,6 +110,9 @@ export function AdminCollectionEditor({ collectionId }: Props) {
   const [skuTouched, setSkuTouched] = useState(false);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [generating, setGenerating] = useState<"collection" | "design" | null>(
+    null,
+  );
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -137,6 +145,7 @@ export function AdminCollectionEditor({ collectionId }: Props) {
             nameFa: found.nameFa,
             nameEn: found.nameEn,
             slug: found.slug,
+            description: found.description ?? "",
             active: Boolean(found.active),
           });
         setVariant((value) => ({
@@ -184,6 +193,48 @@ export function AdminCollectionEditor({ collectionId }: Props) {
       const next = { ...item, ...patch };
       return skuTouched ? next : { ...next, sku: skuFrom(design, next) };
     });
+  }
+
+  async function generateDescription(
+    kind: "collection" | "design",
+    draft?: DesignDraft,
+  ) {
+    setGenerating(kind);
+    setError("");
+    try {
+      const response = await fetch("/api/admin/generate-copy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          kind === "collection"
+            ? {
+                kind,
+                nameFa: collection.nameFa,
+                nameEn: collection.nameEn,
+                current: collection.description,
+              }
+            : {
+                kind,
+                name: draft?.name,
+                collection: currentCollection?.nameFa,
+                current: draft?.description,
+              },
+        ),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "تولید متن انجام نشد.");
+      if (kind === "collection")
+        setCollection((item) => ({ ...item, description: data.description }));
+      else if (draft?.id)
+        setDesign((item) => ({ ...item, description: data.description }));
+      else setNewDesign((item) => ({ ...item, description: data.description }));
+    } catch (reason) {
+      setError(
+        reason instanceof Error ? reason.message : "تولید متن انجام نشد.",
+      );
+    } finally {
+      setGenerating(null);
+    }
   }
 
   async function saveCollection(event: FormEvent) {
@@ -291,6 +342,8 @@ export function AdminCollectionEditor({ collectionId }: Props) {
       description: item.description,
       basePrice: String(item.basePrice),
       baseCost: String(item.baseCost),
+      editionLimit: String(item.editionLimit),
+      editionIssued: String(item.editionIssued),
       artworkKey: item.artworkKey ?? "",
       placements: item.placements?.split(",").filter(Boolean) ?? ["center"],
       active: Boolean(item.active),
@@ -578,6 +631,28 @@ export function AdminCollectionEditor({ collectionId }: Props) {
                 />
               </div>
             </label>
+            <label className="text-sm font-bold md:col-span-2">
+              <span className="flex items-center justify-between gap-3">
+                <span>توضیحات کالکشن</span>
+                <button
+                  type="button"
+                  disabled={generating !== null}
+                  onClick={() => void generateDescription("collection")}
+                  className="rounded-full bg-lime-300 px-4 py-2 text-xs text-black disabled:opacity-50"
+                >
+                  {generating === "collection"
+                    ? "در حال نوشتن…"
+                    : "✦ پیشنهاد با هوش مصنوعی"}
+                </button>
+              </span>
+              <textarea
+                value={collection.description}
+                onChange={(e) =>
+                  setCollection({ ...collection, description: e.target.value })
+                }
+                className="mt-2 min-h-32 w-full rounded-xl border border-black/12 bg-[#fafaf8] p-3.5 outline-none focus:border-black"
+              />
+            </label>
           </div>
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <button
@@ -620,6 +695,8 @@ export function AdminCollectionEditor({ collectionId }: Props) {
               pending={pending}
               onSubmit={(event) => void saveDesign(event, newDesign, true)}
               createMode
+              onGenerate={() => void generateDescription("design", newDesign)}
+              generating={generating === "design"}
             />
             <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {designs.map((item) => (
@@ -701,6 +778,8 @@ export function AdminCollectionEditor({ collectionId }: Props) {
               fileRef={editFileRef}
               pending={pending}
               onSubmit={(event) => void saveDesign(event, design)}
+              onGenerate={() => void generateDescription("design", design)}
+              generating={generating === "design"}
             />
             <div className="mt-8 border-t border-black/10 pt-8">
               <h3 className="text-xl font-black">قیمت و موجودی</h3>
@@ -918,6 +997,8 @@ function DesignForm({
   pending,
   onSubmit,
   createMode = false,
+  onGenerate,
+  generating,
 }: {
   design: DesignDraft;
   setDesign: (value: DesignDraft) => void;
@@ -928,6 +1009,8 @@ function DesignForm({
   pending: boolean;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   createMode?: boolean;
+  onGenerate: () => void;
+  generating: boolean;
 }) {
   return (
     <form
@@ -961,7 +1044,17 @@ function DesignForm({
           />
         </label>
         <label className="text-sm font-bold md:col-span-2">
-          توضیحات
+          <span className="flex items-center justify-between gap-3">
+            <span>توضیحات طرح</span>
+            <button
+              type="button"
+              disabled={generating}
+              onClick={onGenerate}
+              className="rounded-full bg-lime-300 px-4 py-2 text-xs text-black disabled:opacity-50"
+            >
+              {generating ? "در حال نوشتن…" : "✦ پیشنهاد با هوش مصنوعی"}
+            </button>
+          </span>
           <textarea
             value={design.description}
             onChange={(e) =>
@@ -1015,6 +1108,40 @@ function DesignForm({
             <span className="mt-2 block text-xs font-normal leading-5 text-black/45">
               هزینه تولید یک تیشرت سفارشی؛ برای محاسبه سود در حسابداری استفاده
               می‌شود.
+            </span>
+          </label>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 md:col-span-2">
+          <label className="text-sm font-bold">
+            تعداد کل نسخه محدود
+            <input
+              required
+              type="number"
+              min="0"
+              value={design.editionLimit}
+              onChange={(e) =>
+                setDesign({ ...design, editionLimit: e.target.value })
+              }
+              className="mt-2 w-full rounded-xl border border-black/12 bg-white p-3 outline-none focus:border-black"
+            />
+            <span className="mt-2 block text-xs font-normal text-black/45">
+              صفر یعنی بدون شماره‌گذاری محدود.
+            </span>
+          </label>
+          <label className="text-sm font-bold">
+            تعداد نسخه‌های چاپ‌شده قبلی
+            <input
+              required
+              type="number"
+              min="0"
+              value={design.editionIssued}
+              onChange={(e) =>
+                setDesign({ ...design, editionIssued: e.target.value })
+              }
+              className="mt-2 w-full rounded-xl border border-black/12 bg-white p-3 outline-none focus:border-black"
+            />
+            <span className="mt-2 block text-xs font-normal text-black/45">
+              قابل ویرایش؛ سفارش بعدی از شماره بعد از این مقدار شروع می‌شود.
             </span>
           </label>
         </div>

@@ -78,7 +78,7 @@ export async function POST(request: Request) {
   const variantSku = cleanText(payload.variantSku, 100);
   const design = designSlug
     ? await env.DB.prepare(
-        "SELECT id, name, base_price AS basePrice, base_cost AS baseCost, active FROM designs WHERE slug = ?",
+        "SELECT id, name, base_price AS basePrice, base_cost AS baseCost, edition_limit AS editionLimit, edition_issued AS editionIssued, active FROM designs WHERE slug = ?",
       )
         .bind(designSlug)
         .first<{
@@ -86,6 +86,8 @@ export async function POST(request: Request) {
           name: string;
           basePrice: number;
           baseCost: number;
+          editionLimit: number;
+          editionIssued: number;
           active: number;
         }>()
     : null;
@@ -179,6 +181,37 @@ export async function POST(request: Request) {
       );
     }
   }
+  let editionStart: number | null = null;
+  let editionEnd: number | null = null;
+  const editionLimit = design?.editionLimit ?? 0;
+  if (design && editionLimit > 0) {
+    const allocation = await env.DB.prepare(
+      "UPDATE designs SET edition_issued = edition_issued + ? WHERE id = ? AND edition_issued + ? <= edition_limit RETURNING edition_issued AS editionEnd",
+    )
+      .bind(quantity, design.id, quantity)
+      .first<{ editionEnd: number }>();
+    if (!allocation) {
+      if (variant)
+        await env.DB.prepare(
+          "UPDATE product_variants SET stock_quantity = stock_quantity + ? WHERE sku = ?",
+        )
+          .bind(quantity, variant.sku)
+          .run();
+      await Promise.allSettled([
+        deleteHostedFile(frontUpload.url),
+        deleteHostedFile(backUpload.url),
+      ]);
+      return Response.json(
+        {
+          error:
+            "تیراژ محدود این طرح به پایان رسیده یا برای تعداد انتخاب‌شده کافی نیست.",
+        },
+        { status: 409 },
+      );
+    }
+    editionEnd = allocation.editionEnd;
+    editionStart = editionEnd - quantity + 1;
+  }
   const snapshot = {
     ...payload,
     firstName,
@@ -192,10 +225,13 @@ export async function POST(request: Request) {
     fitId,
     colorId,
     orderType: variant ? "ready-made" : "custom",
+    editionStart,
+    editionEnd,
+    editionLimit,
   };
   try {
     await env.DB.prepare(
-      `INSERT INTO orders (order_code, customer_first_name, customer_last_name, customer_phone, design_id, design_name, collection_slug, material_id, size_id, fit_id, color_id, print_side, placement_id, quantity, unit_price, unit_cost, front_image_key, back_image_key, configuration_json, order_type, variant_sku, total_price) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO orders (order_code, customer_first_name, customer_last_name, customer_phone, design_id, design_name, collection_slug, material_id, size_id, fit_id, color_id, print_side, placement_id, quantity, unit_price, unit_cost, front_image_key, back_image_key, configuration_json, order_type, variant_sku, total_price, edition_start, edition_end, edition_limit_snapshot) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
       .bind(
         orderCode,
@@ -220,6 +256,9 @@ export async function POST(request: Request) {
         variant ? "ready-made" : "custom",
         variant?.sku ?? null,
         unitPrice * quantity,
+        editionStart,
+        editionEnd,
+        editionLimit || null,
       )
       .run();
   } catch {
@@ -246,6 +285,9 @@ export async function POST(request: Request) {
     variantSku: variant?.sku,
     frontUrl: frontUpload.url,
     backUrl: backUpload.url,
+    editionStart,
+    editionEnd,
+    editionLimit,
   });
   await env.DB.prepare(
     "UPDATE orders SET telegram_status = ?, telegram_error = ? WHERE order_code = ?",

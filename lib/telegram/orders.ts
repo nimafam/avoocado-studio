@@ -15,6 +15,9 @@ export async function sendOrderToTelegram(order: {
   variantSku?: string | null;
   frontUrl: string;
   backUrl: string;
+  editionStart?: number | null;
+  editionEnd?: number | null;
+  editionLimit?: number | null;
 }) {
   const runtime = env as unknown as TelegramEnv;
   const token = runtime.TELEGRAM_BOT_TOKEN;
@@ -31,6 +34,9 @@ export async function sendOrderToTelegram(order: {
     `محصول: ${order.designName}`,
     order.variantSku ? `SKU: ${order.variantSku}` : null,
     `تعداد: ${order.quantity}`,
+    order.editionStart && order.editionLimit
+      ? `نسخه محدود: ${String(order.editionStart).padStart(3, "0")}${order.editionEnd !== order.editionStart ? ` تا ${String(order.editionEnd).padStart(3, "0")}` : ""} از ${order.editionLimit}`
+      : null,
     `مبلغ: ${order.totalPrice.toLocaleString("fa-IR")} تومان`,
     `نمای جلو: ${order.frontUrl}`,
     `نمای پشت: ${order.backUrl}`,

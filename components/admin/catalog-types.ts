@@ -5,6 +5,7 @@ export type Category = {
   nameEn: string;
   sortOrder: number;
   active: number;
+  description: string;
 };
 export type Design = {
   id: number;
@@ -13,6 +14,8 @@ export type Design = {
   description: string;
   basePrice: number;
   baseCost: number;
+  editionLimit: number;
+  editionIssued: number;
   artworkKey: string | null;
   active: number;
   collectionId: number | null;

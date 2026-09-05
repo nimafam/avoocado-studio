@@ -19,6 +19,8 @@ type Payload = {
   description?: string;
   basePrice?: number;
   baseCost?: number;
+  editionLimit?: number;
+  editionIssued?: number;
   artworkKey?: string | null;
   collectionId?: number;
   placements?: string[];
@@ -94,12 +96,13 @@ export async function POST(request: Request) {
       if (!validSlug(body.slug) || !body.nameFa?.trim() || !body.nameEn?.trim())
         return badRequest("Collection slug and names are required.");
       await env.DB.prepare(
-        "INSERT INTO design_categories (slug, name_fa, name_en, sort_order, active) VALUES (?, ?, ?, COALESCE((SELECT MAX(sort_order) + 1 FROM design_categories), 1), ?)",
+        "INSERT INTO design_categories (slug, name_fa, name_en, description, sort_order, active) VALUES (?, ?, ?, ?, COALESCE((SELECT MAX(sort_order) + 1 FROM design_categories), 1), ?)",
       )
         .bind(
           body.slug,
           body.nameFa.trim(),
           body.nameEn.trim(),
+          body.description?.trim() ?? "",
           body.active === false ? 0 : 1,
         )
         .run();
@@ -113,8 +116,18 @@ export async function POST(request: Request) {
         return badRequest(
           "Design name, slug, collection and at least one placement are required.",
         );
+      const editionLimit = Math.max(
+        0,
+        Math.floor(Number(body.editionLimit) || 0),
+      );
+      const editionIssued = Math.max(
+        0,
+        Math.floor(Number(body.editionIssued) || 0),
+      );
+      if (editionLimit > 0 && editionIssued > editionLimit)
+        return badRequest("تعداد چاپ‌شده نمی‌تواند بیشتر از تیراژ کل باشد.");
       await env.DB.prepare(
-        "INSERT INTO designs (slug, name, description, base_price, base_cost, artwork_key, active) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO designs (slug, name, description, base_price, base_cost, edition_limit, edition_issued, artwork_key, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
       )
         .bind(
           body.slug,
@@ -122,6 +135,8 @@ export async function POST(request: Request) {
           body.description?.trim() ?? "",
           Math.max(0, Number(body.basePrice) || 0),
           Math.max(0, Number(body.baseCost) || 0),
+          editionLimit,
+          editionIssued,
           body.artworkKey ?? null,
           body.active === false ? 0 : 1,
         )
@@ -187,12 +202,13 @@ export async function PATCH(request: Request) {
       if (!validSlug(body.slug) || !body.nameFa?.trim() || !body.nameEn?.trim())
         return badRequest("Collection slug and names are required.");
       await env.DB.prepare(
-        "UPDATE design_categories SET slug = ?, name_fa = ?, name_en = ?, active = ? WHERE id = ?",
+        "UPDATE design_categories SET slug = ?, name_fa = ?, name_en = ?, description = ?, active = ? WHERE id = ?",
       )
         .bind(
           body.slug,
           body.nameFa.trim(),
           body.nameEn.trim(),
+          body.description?.trim() ?? "",
           body.active === false ? 0 : 1,
           body.id,
         )
@@ -207,8 +223,27 @@ export async function PATCH(request: Request) {
         return badRequest(
           "Design name, slug, collection and at least one placement are required.",
         );
+      const editionLimit = Math.max(
+        0,
+        Math.floor(Number(body.editionLimit) || 0),
+      );
+      const editionIssued = Math.max(
+        0,
+        Math.floor(Number(body.editionIssued) || 0),
+      );
+      if (editionLimit > 0 && editionIssued > editionLimit)
+        return badRequest("تعداد چاپ‌شده نمی‌تواند بیشتر از تیراژ کل باشد.");
+      const assigned = await env.DB.prepare(
+        "SELECT COALESCE(MAX(edition_end), 0) AS maximum FROM orders WHERE design_id = ?",
+      )
+        .bind(body.id)
+        .first<{ maximum: number }>();
+      if (editionIssued < (assigned?.maximum ?? 0))
+        return badRequest(
+          `شمارنده نمی‌تواند از آخرین شماره اختصاص‌یافته (${assigned?.maximum}) کمتر باشد.`,
+        );
       await env.DB.prepare(
-        "UPDATE designs SET slug = ?, name = ?, description = ?, base_price = ?, base_cost = ?, artwork_key = ?, active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        "UPDATE designs SET slug = ?, name = ?, description = ?, base_price = ?, base_cost = ?, edition_limit = ?, edition_issued = ?, artwork_key = ?, active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
       )
         .bind(
           body.slug,
@@ -216,6 +251,8 @@ export async function PATCH(request: Request) {
           body.description?.trim() ?? "",
           Math.max(0, Number(body.basePrice) || 0),
           Math.max(0, Number(body.baseCost) || 0),
+          editionLimit,
+          editionIssued,
           body.artworkKey ?? null,
           body.active === false ? 0 : 1,
           body.id,

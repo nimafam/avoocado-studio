@@ -8,29 +8,29 @@
   "routes": [
     {
       "pattern": "avoocadostudio.com/*",
-      "zone_name": "avoocadostudio.com"
-    }
+      "zone_name": "avoocadostudio.com",
+    },
   ],
   "assets": {
     "directory": "dist/client",
     "not_found_handling": "none",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
   },
   "cache": { "enabled": true },
+  "ai": { "binding": "AI" },
   "observability": {
     "enabled": true,
-    "head_sampling_rate": 1
+    "head_sampling_rate": 1,
   },
   "vars": {
-    "UPLOAD_API_URL": "https://storage.avoocadostudio.com/api/avoocado-upload.php"
+    "UPLOAD_API_URL": "https://storage.avoocadostudio.com/api/avoocado-upload.php",
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "avoocado-catalog",
       "database_id": "246d38b6-1167-43a8-8e01-50a28cc3a33f",
-      "migrations_dir": "db/migrations"
-    }
-  ]
+      "migrations_dir": "db/migrations",
+    },
+  ],
 }
-
