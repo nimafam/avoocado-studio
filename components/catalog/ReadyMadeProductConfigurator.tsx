@@ -197,6 +197,30 @@ export function ReadyMadeProductConfigurator({
             {product.description}
           </p>
         )}
+        {artworkSource ? (
+          <a
+            href={artworkSource}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-7 flex items-center gap-4 rounded-2xl border border-black/10 bg-[#f6f5f1] p-3 transition hover:border-black/30"
+          >
+            <span className="grid h-32 w-28 shrink-0 place-items-center overflow-hidden rounded-xl bg-white p-2">
+              <img
+                src={artworkSource}
+                alt={product.name}
+                className="block h-full w-full object-contain"
+              />
+            </span>
+            <span>
+              <small className="block text-xs uppercase tracking-[.14em] text-black/40">
+                {fa ? "طرح اصلی" : "Original artwork"}
+              </small>
+              <strong className="mt-2 block text-sm">
+                {fa ? "مشاهده کامل طرح" : "View full artwork"} ↗
+              </strong>
+            </span>
+          </a>
+        ) : null}
         <div className="mt-8 space-y-6">
           <fieldset>
             <legend className="mb-3 text-xs uppercase tracking-[.15em] text-black/45">
